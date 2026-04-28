@@ -7,27 +7,28 @@ import JsBarcode from "jsbarcode";
 const BarcodeSuccessModal = ({ isOpen, onClose, product }) => {
   const { theme } = useTheme();
   const printRef = useRef();
-
-  if (!product) return null;
+  const barcodeRef = useRef(null);
 
   useEffect(() => {
-    if (isOpen && product?.barcode) {
-      setTimeout(() => {
-        const element = document.getElementById("barcode-modal-preview");
-        if (element) {
-          JsBarcode(element, product.barcode, {
-            format: "CODE128",
-            displayValue: true,
-            fontSize: 20,
-            width: 2,
-            height: 60,
-            background: "#ffffff",
-            lineColor: "#000000"
-          });
-        }
-      }, 100);
+    if (!product || !isOpen || !product?.barcode) return;
+
+    if (barcodeRef.current) {
+      JsBarcode(barcodeRef.current, product.barcode, {
+        format: "CODE128",
+        displayValue: true,
+        fontSize: 20,
+        width: 2,
+        height: 60,
+        background: "#ffffff",
+        lineColor: "#000000"
+      });
     }
+
+
+
   }, [isOpen, product]);
+
+  if (!product) return null;
 
   const handlePrint = () => {
     const windowUrl = 'about:blank';
@@ -80,7 +81,7 @@ const BarcodeSuccessModal = ({ isOpen, onClose, product }) => {
     `;
 
     printWindow.document.body.querySelector('.name').textContent = product.name;
-    
+
     printWindow.onload = () => {
       printWindow.print();
       printWindow.close();
@@ -118,7 +119,7 @@ const BarcodeSuccessModal = ({ isOpen, onClose, product }) => {
           <h3 className="name text-lg font-bold mb-2 text-black">{product.name}</h3>
 
           <div className="barcode-preview-container bg-white p-4 rounded border">
-            <canvas id="barcode-modal-preview"></canvas>
+            <canvas ref={barcodeRef}> </canvas>
           </div>
 
           <div className="mt-4 flex flex-col items-center">
