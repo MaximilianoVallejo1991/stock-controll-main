@@ -1,0 +1,52 @@
+schema: spec-driven
+
+context: |
+  Tech stack: Vite + React + Tailwind CSS 4
+  Architecture: Component-based
+  Testing: Not found
+  Style: ESLint
+
+strict_tdd: false
+
+testing:
+  ## Testing Capabilities
+  **Strict TDD Mode**: disabled
+  **Detected**: 2026-04-29
+  
+  ### Test Runner
+  - Command: —
+  - Framework: NOT FOUND
+  
+  ### Test Layers
+  | Layer | Available | Tool |
+  |-------|-----------|------|
+  | Unit | ❌ | — |
+  | Integration | ❌ | — |
+  | E2E | ❌ | — |
+  
+  ### Coverage
+  - Available: ❌
+  - Command: —
+  
+  ### Quality Tools
+  | Tool | Available | Command |
+  |------|-----------|---------|
+  | Linter | ✅ | eslint |
+  | Type checker | ❌ | — |
+  | Formatter | ❌ | — |
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+  specs:
+    - Use Given/When/Then format
+  design:
+    - Atomic design principles
+  tasks:
+    - Batch by components
+  apply:
+    - React 19 standards
+  verify:
+    - Visual verification
+  archive:
+    - Clean up unused assets

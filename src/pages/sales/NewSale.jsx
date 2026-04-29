@@ -208,6 +208,18 @@ const NewSale = () => {
   const handleAddPayment = () => {
     const amount = parseFloat(newPaymentAmount);
     if (!amount || amount <= 0) return;
+
+    if (newPaymentMethod === "Cuenta Corriente") {
+      if (!selectedClient) {
+        alert("Debe seleccionar un cliente para usar Cuenta Corriente.");
+        return;
+      }
+      if (!selectedClient.currentAccount || selectedClient.currentAccount.status !== "OPEN") {
+        alert("El cliente seleccionado no tiene una cuenta corriente abierta o no califica.");
+        return;
+      }
+    }
+
     const cappedAmount = Math.min(amount, remaining > 0 ? remaining : amount);
     addPayment(newPaymentMethod, cappedAmount);
     setNewPaymentAmount("");
@@ -219,6 +231,16 @@ const NewSale = () => {
 
   // When the single-method select changes, immediately update paymentBreakdown
   const handleSingleMethodChange = (method) => {
+    if (method === "Cuenta Corriente") {
+      if (!selectedClient) {
+        alert("Debe seleccionar un cliente para usar Cuenta Corriente.");
+        return;
+      }
+      if (!selectedClient.currentAccount || selectedClient.currentAccount.status !== "OPEN") {
+        alert("El cliente seleccionado no tiene una cuenta corriente abierta o no califica.");
+        return;
+      }
+    }
     setSingleMethod(method);
     // Apply the full neto to this single method
   };
@@ -545,6 +567,7 @@ const NewSale = () => {
               <option value="Efectivo">Efectivo</option>
               <option value="Tarjeta">Tarjeta</option>
               <option value="Transferencia">Transferencia</option>
+              <option value="Cuenta Corriente">Cuenta Corriente</option>
             </select>
           ) : (
             /* Split mode: full multi-payment panel */
@@ -599,6 +622,7 @@ const NewSale = () => {
                     <option value="Efectivo">Efectivo</option>
                     <option value="Tarjeta">Tarjeta</option>
                     <option value="Transferencia">Transferencia</option>
+                    <option value="Cuenta Corriente">Cuenta Corriente</option>
                   </select>
                   <div className="flex-1 relative flex items-center">
                     <input

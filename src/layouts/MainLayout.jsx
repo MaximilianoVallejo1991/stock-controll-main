@@ -23,6 +23,7 @@ const MainLayout = () => {
     { label: "Productos", onClick: () => navigate("/products"), roles: [ROLES.SISTEMA, ROLES.ADMINISTRADOR, ROLES.ENCARGADO, ROLES.VENDEDOR] },
     { label: "Descuentos", onClick: () => navigate("/discounts"), roles: [ROLES.SISTEMA, ROLES.ADMINISTRADOR, ROLES.ENCARGADO, ROLES.VENDEDOR] },
     { label: "Proveedores", onClick: () => navigate("/suppliers"), roles: [ROLES.SISTEMA, ROLES.ADMINISTRADOR, ROLES.ENCARGADO, ROLES.VENDEDOR] },
+    { label: "Cuentas Corrientes", onClick: () => navigate("/accounts"), roles: [ROLES.SISTEMA, ROLES.ADMINISTRADOR, ROLES.ENCARGADO, ROLES.VENDEDOR] },
     { label: "Reportes", onClick: () => navigate("/estadistics"), roles: [ROLES.SISTEMA, ROLES.ADMINISTRADOR] },
     // { label: "Mensajes", onClick: () => navigate("/Chat"), roles: [ROLES.SISTEMA, ROLES.ADMINISTRADOR, ROLES.ENCARGADO, ROLES.VENDEDOR] },
     // { label: "Perfil", onClick: () => navigate("/Profile"), roles: [ROLES.SISTEMA, ROLES.ADMINISTRADOR, ROLES.ENCARGADO, ROLES.VENDEDOR] },

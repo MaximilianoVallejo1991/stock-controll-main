@@ -25,6 +25,8 @@ import { StockHistory } from "../pages/Reportes/StockHistory";
 import { SellerPerformance } from "../pages/Reportes/SellerPerformance";
 import { ROLES } from "../constants/roles";
 import { DiscountsMainPage } from "../pages/Discounts/DiscountsMainPage";
+import { CurrentAccounts } from "../pages/CurrentAccounts";
+import CurrentAccountDetails from "../pages/CurrentAccountDetails";
 
 export const routes = createBrowserRouter([
   {
@@ -61,6 +63,8 @@ export const routes = createBrowserRouter([
       { path: "stock-history", element: <RoleRoute allowedRoles={[ROLES.SISTEMA, ROLES.ADMINISTRADOR, ROLES.ENCARGADO]}><StockHistory /></RoleRoute> },
       { path: "seller-performance", element: <RoleRoute allowedRoles={[ROLES.SISTEMA, ROLES.ADMINISTRADOR]}><SellerPerformance /></RoleRoute> },
       { path: ":entity/details/:id", element: <Details /> },
+      { path: "accounts", element: <RoleRoute allowedRoles={[ROLES.SISTEMA, ROLES.ADMINISTRADOR, ROLES.ENCARGADO, ROLES.VENDEDOR]}><CurrentAccounts /></RoleRoute> },
+      { path: "accounts/details/:id", element: <RoleRoute allowedRoles={[ROLES.SISTEMA, ROLES.ADMINISTRADOR, ROLES.ENCARGADO, ROLES.VENDEDOR]}><CurrentAccountDetails /></RoleRoute> },
       { path: "discounts", element: <RoleRoute allowedRoles={[ROLES.SISTEMA, ROLES.ADMINISTRADOR, ROLES.ENCARGADO, ROLES.VENDEDOR]}><DiscountsMainPage /></RoleRoute> },
 
     ],

@@ -294,10 +294,10 @@ export const SaleDetail = ({ isOpen, onClose, saleData, onCancelSuccess }) => {
 
           {/* Total */}
           <div
-            className="flex justify-between text-xl font-bold p-3 rounded mb-4"
+            className="flex justify-between text-xl font-bold p-3 rounded mb-2"
             style={{ backgroundColor: theme.bg }}
           >
-            <span>Total a Pagar</span>
+            <span>Total Venta</span>
             <span style={{ color: isCancelled ? theme.danger : theme.primary }}>
               {isCancelled ? (
                 <s className="opacity-50">{formatCurrency(finalTotal)}</s>
@@ -306,6 +306,28 @@ export const SaleDetail = ({ isOpen, onClose, saleData, onCancelSuccess }) => {
               )}
             </span>
           </div>
+
+          {/* Información de Cuenta Corriente (si aplica) */}
+          {(() => {
+            const ccPayment = (saleData.orderPayments || []).find(p => (p.paymentMethod || p.method) === "Cuenta Corriente");
+            if (ccPayment && !isCancelled) {
+              return (
+                <div className="mb-4 p-3 rounded border border-red-200 bg-red-50 text-red-800 text-sm">
+                  <div className="flex justify-between font-bold">
+                    <span>A Cuenta Corriente:</span>
+                    <span>{formatCurrency(ccPayment.amount)}</span>
+                  </div>
+                  {saleData.client?.currentAccount && (
+                    <div className="flex justify-between text-xs mt-1 opacity-80">
+                      <span>Nuevo Saldo Total Cliente:</span>
+                      <span>{formatCurrency(saleData.client.currentAccount.balance)}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           {/* Usted ahorró */}
           {hasAnyDiscount && !isCancelled && (
