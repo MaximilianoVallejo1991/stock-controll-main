@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { useTheme } from "../../context/ThemeContext";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 import { FaEye } from "react-icons/fa";
 import SaleDetail from "./SaleDetail";
 import { formatCurrency } from "../../utils/currency";
+
 
 
 const MAX_DAYS = 30;
@@ -25,6 +26,8 @@ export const SalesList = () => {
   const [startDate, setStartDate] = useState(() => toLocalDateString(subDays(new Date(), 7)));
   const [endDate, setEndDate] = useState(() => toLocalDateString(new Date()));
   const [filterError, setFilterError] = useState(null);
+  const [error, setError] = useState(null);
+
 
 
 
@@ -48,8 +51,9 @@ export const SalesList = () => {
 
 
   useEffect(() => {
-    fetchHistory();
-  }, []);
+    fetchHistory(startDate, endDate);
+  }, [fetchHistory]);
+
 
 
   const validateRange = (start, end) => {
@@ -64,8 +68,9 @@ export const SalesList = () => {
     const err = validateRange(startDate, endDate);
     if (err) { setFilterError(err); return; }
     setFilterError(null);
-    fetchRegisters(startDate, endDate);
+    fetchHistory(startDate, endDate);
   };
+
 
   const handleClear = () => {
     const defaultStart = toLocalDateString(subDays(new Date(), 7));
@@ -73,8 +78,9 @@ export const SalesList = () => {
     setStartDate(defaultStart);
     setEndDate(defaultEnd);
     setFilterError(null);
-    fetchRegisters(defaultStart, defaultEnd);
+    fetchHistory(defaultStart, defaultEnd);
   };
+
 
   const handleRowClick = (item) => {
     if (item._typeModel === 'ORDER') {
@@ -226,7 +232,9 @@ export const SalesList = () => {
         isOpen={selectedSale !== null}
         onClose={() => setSelectedSale(null)}
         saleData={selectedSale}
+        onCancelSuccess={() => fetchHistory(startDate, endDate)}
       />
+
     </div>
   );
 };
