@@ -9,6 +9,8 @@ import { format } from "date-fns";
 import { FaArrowLeft, FaBan, FaCheckCircle, FaPrint } from "react-icons/fa";
 import MessageModal from "../components/Modals/MessageModal";
 import ConfirmModal from "../components/Modals/ConfirmModal";
+import { FaSearch, FaDollarSign, FaFileInvoiceDollar, FaCheckCircle } from "react-icons/fa";
+
 
 const CurrentAccountDetails = () => {
     const { id } = useParams();
