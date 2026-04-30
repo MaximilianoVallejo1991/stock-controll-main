@@ -92,6 +92,10 @@ const DiscountSummaryModal = ({
     <div className="border-t-2 border-current my-3 opacity-60"></div>
   );
 
+  const hasCCPayment = paymentBreakdown.some(p => p.method === "Cuenta Corriente");
+  const ccAmount = paymentBreakdown.find(p => p.method === "Cuenta Corriente")?.amount || 0;
+  const isPureCC = paymentBreakdown.length === 1 && hasCCPayment;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div
@@ -99,10 +103,20 @@ const DiscountSummaryModal = ({
         style={{ backgroundColor: theme.bgcards, color: theme.text }}
       >
         {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b" style={{ borderColor: theme.bg3 }}>
+        <div className="flex justify-between items-center p-4 border-b relative overflow-hidden" style={{ borderColor: theme.bg3 }}>
+          {hasCCPayment && (
+            <div className="absolute top-0 left-0 w-full h-1 bg-orange-500 animate-pulse"></div>
+          )}
           <h2 className="text-lg font-bold flex items-center gap-2">
             <FaShoppingCart />
-            Resumen de Venta
+            {hasCCPayment ? (
+              <span className="flex flex-col">
+                <span>Resumen de Operación</span>
+                <span className="text-[10px] uppercase tracking-tighter text-orange-500 font-black">
+                  {isPureCC ? "Generación de Deuda Total" : `Generación de Deuda Parcial (${formatCurrency(ccAmount)})`}
+                </span>
+              </span>
+            ) : "Resumen de Venta"}
           </h2>
           <button onClick={onClose} className="p-1 hover:opacity-70 transition-opacity">
             <FaTimes size={20} />
@@ -114,6 +128,22 @@ const DiscountSummaryModal = ({
           ref={scrollContainerRef}
           className="flex-1 overflow-y-auto p-4 custom-scrollbar relative"
         >
+          {/* Alerta discreta de CC */}
+          {hasCCPayment && (
+            <div className="mb-4 p-2.5 rounded-lg border border-dashed flex items-center gap-3 bg-orange-500/5 text-orange-600 border-orange-500/30">
+              <div className="p-2 rounded-full bg-orange-500/10">
+                <FaFileInvoiceDollar size={16} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold uppercase tracking-tight">Atención Vendedor</span>
+                <p className="text-[11px] opacity-80 leading-tight">
+                  Esta operación impactará en el <b>Saldo Deudor</b> del cliente. 
+                  {ccAmount > 0 && ` Monto a financiar: ${formatCurrency(ccAmount)}`}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Overlay de carga (No intrusivo para preservar el scroll) */}
           {isLoading && (
             <div className="absolute inset-0 z-10 flex justify-center items-start pt-20 bg-white/20 backdrop-blur-[1px]">
@@ -124,12 +154,13 @@ const DiscountSummaryModal = ({
           )}
 
           {/* Info del cliente */}
-              <div className="mb-4">
-                <p className="text-base font-medium">
-                  <span className="font-semibold">Cliente: </span>
-                  {clientName}
-                </p>
-              </div>
+          <div className="mb-4">
+            <p className="text-base font-medium">
+              <span className="font-semibold">Cliente: </span>
+              {clientName}
+            </p>
+          </div>
+          {/* ... resto del contenido igual ... */}
 
               {/* Productos */}
               <div className="mb-4">
@@ -400,11 +431,15 @@ const DiscountSummaryModal = ({
           </button>
           <button
             onClick={handleConfirmClick}
-            className="flex-1 p-3 rounded font-semibold transition-opacity hover:opacity-90"
-            style={{ backgroundColor: theme.primary, color: "white" }}
+            className="flex-1 p-3 rounded font-semibold transition-all hover:scale-[1.02] active:scale-95 shadow-md flex items-center justify-center gap-2"
+            style={{ 
+              backgroundColor: hasCCPayment ? "#ea580c" : theme.primary, 
+              color: "white" 
+            }}
             disabled={isLoading}
           >
-            Realizar Venta
+            {hasCCPayment && <FaFileInvoiceDollar size={18} />}
+            {hasCCPayment ? (isPureCC ? "Cargar en Cuenta Corriente" : "Confirmar Venta Combinada") : "Realizar Venta"}
           </button>
         </div>
       </div>

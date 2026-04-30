@@ -558,17 +558,28 @@ const NewSale = () => {
 
           {!isSplitPayment ? (
             /* Simple mode: single selector */
-            <select
-              value={singleMethod}
-              onChange={(e) => handleSingleMethodChange(e.target.value)}
-              className="w-full p-2 rounded outline-none"
-              style={{ backgroundColor: theme.bg, color: theme.text }}
-            >
-              <option value="Efectivo">Efectivo</option>
-              <option value="Tarjeta">Tarjeta</option>
-              <option value="Transferencia">Transferencia</option>
-              <option value="Cuenta Corriente">Cuenta Corriente</option>
-            </select>
+            <div className="flex flex-col gap-1">
+              <select
+                value={singleMethod}
+                onChange={(e) => handleSingleMethodChange(e.target.value)}
+                className="w-full p-2 rounded outline-none border transition-all"
+                style={{ 
+                  backgroundColor: theme.bg, 
+                  color: theme.text,
+                  borderColor: singleMethod === "Cuenta Corriente" ? "#f97316" : "transparent"
+                }}
+              >
+                <option value="Efectivo">Efectivo</option>
+                <option value="Tarjeta">Tarjeta</option>
+                <option value="Transferencia">Transferencia</option>
+                <option value="Cuenta Corriente">Cuenta Corriente</option>
+              </select>
+              {singleMethod === "Cuenta Corriente" && (
+                <span className="text-[10px] text-orange-500 font-bold uppercase flex items-center gap-1 px-1">
+                   ⚠️ Generando deuda al cliente
+                </span>
+              )}
+            </div>
           ) : (
             /* Split mode: full multi-payment panel */
             <>
@@ -624,10 +635,14 @@ const NewSale = () => {
                 <button
                   type="button"
                   onClick={() => addPayment("Cuenta Corriente", parseFloat(remaining.toFixed(2)))}
-                  className="w-full mt-1 py-1 rounded text-[10px] font-bold uppercase transition-all hover:opacity-80 flex items-center justify-center gap-1 border border-dashed"
-                  style={{ borderColor: theme.danger, color: theme.danger }}
+                  className="w-full mt-1 py-1.5 rounded text-[10px] font-black uppercase transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-1 border-2 border-dashed shadow-sm"
+                  style={{ 
+                    borderColor: "#f97316", 
+                    color: "#f97316",
+                    backgroundColor: "#f9731610"
+                  }}
                 >
-                  <FaFileInvoiceDollar size={10} /> Cargar restante en C.C.
+                  <FaFileInvoiceDollar size={12} /> Cargar restante en C.C.
                 </button>
               )}
 
@@ -901,7 +916,9 @@ const NewSale = () => {
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={processSale}
-        message="¿Confirmar Venta?"
+        message={activeBreakdown.some(p => p.method === "Cuenta Corriente") ? "Confirmar Cargo en Cuenta Corriente" : "¿Confirmar Venta?"}
+        confirmText={activeBreakdown.some(p => p.method === "Cuenta Corriente") ? "Cargar Deuda" : "Realizar Venta"}
+        accentColor={activeBreakdown.some(p => p.method === "Cuenta Corriente") ? "#ea580c" : null}
       >
         <div className="mb-3 text-sm pb-2 border-b" style={{ borderColor: theme.bg }}>
           <span className="font-semibold">Cliente: </span>
