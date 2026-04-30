@@ -214,8 +214,15 @@ export const SalesList = () => {
                         <td className="p-4 truncate max-w-[250px]" title={concepto}>
                           {concepto}
                         </td>
-                        <td className="p-4 font-bold text-lg" style={{ color: isIncome ? theme.success : theme.danger }}>
-                          {isIncome ? '+' : '-'}{formatCurrency(item.amount)}
+                        <td className="p-4 font-bold text-right" style={{ color: isIncome ? theme.success : theme.danger }}>
+                          <div className="flex flex-col items-end">
+                            <span>{isIncome ? '+' : '-'}{formatCurrency(item.amount)}</span>
+                            {isOrder && item.amoutToPaid > 0 && (
+                              <span className="text-[10px] opacity-60 font-medium">
+                                Entró: {formatCurrency(item.amoutPayed)}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="p-4 text-center">
                           {isOrder ? (
