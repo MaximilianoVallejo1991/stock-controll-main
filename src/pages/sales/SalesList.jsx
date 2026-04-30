@@ -200,6 +200,16 @@ export const SalesList = () => {
                           <span className="font-bold px-2 py-1 text-xs rounded border border-current" style={{ color: color, backgroundColor: bgColor }}>
                             {badge}
                           </span>
+                          {isOrder && item.statusPayment === 'pending' && (
+                            <span className="ml-1 font-black px-1.5 py-0.5 text-[9px] rounded bg-red-100 text-red-600 border border-red-200">
+                              DEUDA TOTAL
+                            </span>
+                          )}
+                          {isOrder && item.statusPayment === 'partial' && (
+                            <span className="ml-1 font-black px-1.5 py-0.5 text-[9px] rounded bg-amber-100 text-amber-600 border border-amber-200">
+                              PAGO PARCIAL
+                            </span>
+                          )}
                         </td>
                         <td className="p-4 truncate max-w-[250px]" title={concepto}>
                           {concepto}

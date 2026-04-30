@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { FaArrowLeft, FaBan, FaCheckCircle, FaPrint } from "react-icons/fa";
 import MessageModal from "../components/Modals/MessageModal";
 import ConfirmModal from "../components/Modals/ConfirmModal";
+import { FaSearch, FaDollarSign, FaFileInvoiceDollar, FaCheckCircle } from "react-icons/fa";
 
 const CurrentAccountDetails = () => {
     const { id } = useParams();
@@ -43,10 +44,10 @@ const CurrentAccountDetails = () => {
             setMessage({ isOpen: true, text: "Cuenta cerrada exitosamente.", type: "success" });
             fetchAccountData();
         } catch (err) {
-            setMessage({ 
-                isOpen: true, 
-                text: err.response?.data?.message || "No se pudo cerrar la cuenta.", 
-                type: "error" 
+            setMessage({
+                isOpen: true,
+                text: err.response?.data?.message || "No se pudo cerrar la cuenta.",
+                type: "error"
             });
         }
     };
@@ -104,7 +105,7 @@ const CurrentAccountDetails = () => {
 
     return (
         <div className="p-4 sm:p-8 max-w-6xl mx-auto space-y-6">
-            <button 
+            <button
                 onClick={() => navigate("/accounts")}
                 className="flex items-center gap-2 text-sm font-bold opacity-70 hover:opacity-100 transition-all mb-2"
             >
@@ -136,14 +137,14 @@ const CurrentAccountDetails = () => {
                         </p>
                         <div className="flex gap-2 mt-4">
                             {account.status === 'OPEN' && account.balance === 0 && (
-                                <ThemedButton 
+                                <ThemedButton
                                     className="!bg-red-600 !text-white !py-1 text-xs flex items-center gap-1"
                                     onClick={() => setIsConfirmCloseOpen(true)}
                                 >
                                     <FaBan size={10} /> Cerrar Cuenta
                                 </ThemedButton>
                             )}
-                            <ThemedButton 
+                            <ThemedButton
                                 className="!bg-zinc-700 !text-white !py-1 text-xs flex items-center gap-1"
                                 onClick={() => window.print()}
                             >
@@ -160,7 +161,7 @@ const CurrentAccountDetails = () => {
                     <FaFileInvoiceDollar className="text-2xl text-blue-600" />
                     <h2 className="text-xl font-bold">Historial de Movimientos</h2>
                 </div>
-                
+
                 <DataTable columns={columns} data={account.movements} />
             </div>
 
@@ -173,11 +174,11 @@ const CurrentAccountDetails = () => {
                 <p className="text-sm">Al cerrar la cuenta, el cliente ya no podrá realizar compras a crédito hasta que se vuelva a abrir.</p>
             </ConfirmModal>
 
-            <MessageModal 
-                isOpen={message.isOpen} 
-                onClose={() => setMessage({ ...message, isOpen: false })} 
-                message={message.text} 
-                type={message.type} 
+            <MessageModal
+                isOpen={message.isOpen}
+                onClose={() => setMessage({ ...message, isOpen: false })}
+                message={message.text}
+                type={message.type}
             />
         </div>
     );

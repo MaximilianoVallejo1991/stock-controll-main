@@ -24,7 +24,7 @@ const NewSale = () => {
     search, setSearch,
     category, setCategory,
     paymentBreakdown,
-    addPayment, removePayment,
+    addPayment, updatePayment, removePayment,
     selectedClient, setSelectedClient,
     clientSearchText, setClientSearchText,
     clearPos
@@ -580,7 +580,16 @@ const NewSale = () => {
                   style={{ backgroundColor: theme.bg3, border: `1px solid ${theme.border}` }}
                 >
                   <span style={{ color: theme.colortitlecard }}>{p.method}</span>
-                  <span className="font-bold">{formatCurrency(p.amount)}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="opacity-50 text-[10px]">$</span>
+                    <input
+                      type="number"
+                      value={p.amount}
+                      step="0.01"
+                      className="w-16 bg-transparent font-bold outline-none border-b border-transparent focus:border-blue-500 text-right"
+                      onChange={(e) => updatePayment(i, p.method, parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
                   <button
                     type="button"
                     onClick={() => removePayment(i)}
@@ -608,6 +617,18 @@ const NewSale = () => {
                     : `Restante: ${formatCurrency(remaining)} (Clic para completar)`
                   }
                 </div>
+              )}
+
+              {/* Botón rápido para CC si hay saldo y cliente con cuenta */}
+              {!isFullyCoveredActive && selectedClient?.currentAccount?.status === "OPEN" && remaining > 0 && (
+                <button
+                  type="button"
+                  onClick={() => addPayment("Cuenta Corriente", parseFloat(remaining.toFixed(2)))}
+                  className="w-full mt-1 py-1 rounded text-[10px] font-bold uppercase transition-all hover:opacity-80 flex items-center justify-center gap-1 border border-dashed"
+                  style={{ borderColor: theme.danger, color: theme.danger }}
+                >
+                  <FaFileInvoiceDollar size={10} /> Cargar restante en C.C.
+                </button>
               )}
 
               {/* Add new payment row */}
@@ -982,7 +1003,16 @@ const NewSale = () => {
                         style={{ backgroundColor: theme.bg, borderColor: theme.bg3 }}>
                         <span className="opacity-70">{p.method}</span>
                         <div className="flex items-center gap-2">
-                           <span className="font-bold">{formatCurrency(p.amount)}</span>
+                           <div className="flex items-center gap-1">
+                             <span className="opacity-50 text-[10px]">$</span>
+                             <input
+                               type="number"
+                               value={p.amount}
+                               step="0.01"
+                               className="w-20 bg-transparent font-bold outline-none border-b border-transparent focus:border-blue-500 text-right"
+                               onChange={(e) => updatePayment(i, p.method, parseFloat(e.target.value) || 0)}
+                             />
+                           </div>
                            <button type="button" onClick={() => removePayment(i)} className="p-1 hover:bg-black/5 rounded transition-colors" style={{ color: theme.danger }}>✕</button>
                         </div>
                       </div>
