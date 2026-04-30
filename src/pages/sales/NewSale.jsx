@@ -397,8 +397,10 @@ const NewSale = () => {
   const processSale = async () => {
     if (cart.length === 0) return;
     try {
-      // Cerrar modal de descuentos antes de procesar
+      // ── Limpieza total de estados de modales ──
+      setIsConfirmOpen(false);
       setIsDiscountModalOpen(false);
+      setIsCartModalOpen(false);
       setDiscountPreview(null);
       
       // Enviamos el subtotal (sin descuentos) para validación del backend

@@ -12,6 +12,7 @@ import {
   FaCreditCard,
   FaExchangeAlt,
   FaFileExcel,
+  FaFileInvoiceDollar,
 } from "react-icons/fa";
 import { SaleDetail } from "../sales/SaleDetail";
 import DateRangeFilter from "../../components/Filters/DateRangeFilter";
@@ -29,6 +30,7 @@ export const RegisterHistory = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [expandedId, setExpandedId] = useState(null);
+    const [detailFilter, setDetailFilter] = useState("TODOS"); // Filtro para la lista detallada
     const [selectedSale, setSelectedSale] = useState(null);
     const [isExporting, setIsExporting] = useState(false);
 
@@ -98,6 +100,9 @@ export const RegisterHistory = () => {
     };
 
     const toggleExpand = (id) => {
+        if (expandedId !== id) {
+            setDetailFilter("TODOS"); // Reset filter when changing register
+        }
         setExpandedId(prev => prev === id ? null : id);
     };
 
@@ -203,7 +208,6 @@ export const RegisterHistory = () => {
                                                 )}
                                             </div>
                                         </div>
-
                                         <div className="text-2xl opacity-50 hidden md:block">
                                             {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
                                         </div>
@@ -214,7 +218,11 @@ export const RegisterHistory = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-1 bg-black/10 dark:bg-white/5 p-1">
 
                                             {/* CAJA FÍSICA (EFECTIVO) */}
-                                            <div className="flex flex-col p-4 rounded-lg shadow-inner gap-2" style={{ backgroundColor: theme.bg }}>
+                                            <div 
+                                                className={`flex flex-col p-4 rounded-lg shadow-inner gap-2 cursor-pointer transition-all hover:ring-2 hover:ring-inset ${detailFilter === 'EFECTIVO' ? 'ring-2 ring-green-500' : ''}`}
+                                                style={{ backgroundColor: theme.bg }}
+                                                onClick={(e) => { e.stopPropagation(); setDetailFilter(detailFilter === 'EFECTIVO' ? 'TODOS' : 'EFECTIVO'); }}
+                                            >
                                                 <div className="flex items-center gap-2 font-bold mb-2 pb-2 border-b" style={{ borderColor: theme.bg3, color: theme.success }}>
                                                     <FaMoneyBillWave size={18} /> EFECTIVO (FÍSICO)
                                                 </div>
@@ -266,7 +274,11 @@ export const RegisterHistory = () => {
                                             </div>
 
                                             {/* CAJA TRANSFERENCIAS */}
-                                            <div className="flex flex-col p-4 rounded-lg shadow-inner gap-2 h-full" style={{ backgroundColor: theme.bg }}>
+                                            <div 
+                                                className={`flex flex-col p-4 rounded-lg shadow-inner gap-2 h-full cursor-pointer transition-all hover:ring-2 hover:ring-inset ${detailFilter === 'TRANSFERENCIA' ? 'ring-2 ring-blue-500' : ''}`}
+                                                style={{ backgroundColor: theme.bg }}
+                                                onClick={(e) => { e.stopPropagation(); setDetailFilter(detailFilter === 'TRANSFERENCIA' ? 'TODOS' : 'TRANSFERENCIA'); }}
+                                            >
                                                 <div className="flex items-center gap-2 font-bold mb-2 pb-2 border-b text-blue-500" style={{ borderColor: theme.bg3 }}>
                                                     <FaExchangeAlt size={18} /> TRANSFERENCIAS
                                                 </div>
@@ -277,7 +289,11 @@ export const RegisterHistory = () => {
                                             </div>
 
                                             {/* CAJA TARJETAS */}
-                                            <div className="flex flex-col p-4 rounded-lg shadow-inner gap-2 h-full" style={{ backgroundColor: theme.bg }}>
+                                            <div 
+                                                className={`flex flex-col p-4 rounded-lg shadow-inner gap-2 h-full cursor-pointer transition-all hover:ring-2 hover:ring-inset ${detailFilter === 'TARJETA' ? 'ring-2 ring-orange-500' : ''}`}
+                                                style={{ backgroundColor: theme.bg }}
+                                                onClick={(e) => { e.stopPropagation(); setDetailFilter(detailFilter === 'TARJETA' ? 'TODOS' : 'TARJETA'); }}
+                                            >
                                                 <div className="flex items-center gap-2 font-bold mb-2 pb-2 border-b text-orange-500" style={{ borderColor: theme.bg3 }}>
                                                     <FaCreditCard size={18} /> TARJETAS
                                                 </div>
@@ -288,7 +304,11 @@ export const RegisterHistory = () => {
                                             </div>
 
                                             {/* CUENTA CORRIENTE (DEUDA) */}
-                                            <div className="flex flex-col p-4 rounded-lg shadow-inner gap-2 h-full" style={{ backgroundColor: theme.bg }}>
+                                            <div 
+                                                className={`flex flex-col p-4 rounded-lg shadow-inner gap-2 h-full cursor-pointer transition-all hover:ring-2 hover:ring-inset ${detailFilter === 'CUENTA_CORRIENTE' ? 'ring-2 ring-orange-600' : ''}`}
+                                                style={{ backgroundColor: theme.bg }}
+                                                onClick={(e) => { e.stopPropagation(); setDetailFilter(detailFilter === 'CUENTA_CORRIENTE' ? 'TODOS' : 'CUENTA_CORRIENTE'); }}
+                                            >
                                                 <div className="flex items-center gap-2 font-bold mb-2 pb-2 border-b text-orange-600" style={{ borderColor: theme.bg3 }}>
                                                     <FaFileInvoiceDollar size={18} /> CUENTA CORRIENTE
                                                 </div>
@@ -310,7 +330,21 @@ export const RegisterHistory = () => {
                                                 {[
                                                     ...reg.orders.map(o => ({ ...o, isOrder: true, date: new Date(o.orderDate || o.createdAt) })),
                                                     ...reg.cashMovements.map(m => ({ ...m, isOrder: false, date: new Date(m.createdAt) }))
-                                                ].sort((a, b) => b.date - a.date).map((item, idx) => {
+                                                ]
+                                                .filter(item => {
+                                                    if (detailFilter === "TODOS") return true;
+                                                    if (item.isOrder) {
+                                                        const method = (item.paymentMethod || "").toUpperCase();
+                                                        if (method === "COMBINADO") {
+                                                            return item.orderPayments?.some(p => p.paymentMethod.toUpperCase() === detailFilter);
+                                                        }
+                                                        return method === detailFilter;
+                                                    } else {
+                                                        // Los movimientos manuales solo aparecen en el filtro de EFECTIVO
+                                                        return detailFilter === "EFECTIVO";
+                                                    }
+                                                })
+                                                .sort((a, b) => b.date - a.date).map((item, idx) => {
 
                                                     let label = '';
                                                     let isIncome = true;
@@ -319,13 +353,18 @@ export const RegisterHistory = () => {
                                                     let badgeClass = '';
 
                                                     if (item.isOrder) {
-                                                        label = 'VENTA POS';
-                                                        method = item.paymentMethod || 'Efectivo';
-                                                        if (method === 'Efectivo') badgeClass = 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
-                                                        if (method === 'Transferencia') badgeClass = 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
-                                                        if (method === 'Tarjeta') badgeClass = 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
-                                                        if (method === 'COMBINADO') badgeClass = 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
-                                                        if (method === 'CUENTA_CORRIENTE') badgeClass = 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
+                                                        const methodStr = item.paymentMethod || 'Efectivo';
+                                                        if (methodStr === 'CUENTA_CORRIENTE') {
+                                                            label = 'CUENTA CORRIENTE';
+                                                            badgeClass = 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
+                                                        } else {
+                                                            label = 'VENTA POS';
+                                                            if (methodStr === 'Efectivo') badgeClass = 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+                                                            if (methodStr === 'Transferencia') badgeClass = 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+                                                            if (methodStr === 'Tarjeta') badgeClass = 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
+                                                            if (methodStr === 'COMBINADO') badgeClass = 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
+                                                        }
+                                                        method = methodStr;
                                                         colorClass = 'text-green-600';
                                                     } else {
                                                         label = 'MOV. MANUAL';

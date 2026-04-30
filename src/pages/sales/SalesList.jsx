@@ -166,9 +166,16 @@ export const SalesList = () => {
                     let bgColor = '';
 
                     if (isOrder) {
-                      badge = 'VENTA POS';
-                      color = theme.info;
-                      bgColor = theme.infoBg;
+                      const method = item.paymentMethod || 'Efectivo';
+                      if (method === 'CUENTA_CORRIENTE') {
+                        badge = 'CUENTA CORRIENTE';
+                        color = '#ea580c'; // Naranja oscuro para CC
+                        bgColor = '#fff7ed';
+                      } else {
+                        badge = 'VENTA POS';
+                        color = theme.info;
+                        bgColor = theme.infoBg;
+                      }
                     } else if (item.type === 'INCOME') {
                       badge = 'INGRESO';
                       color = theme.success;
