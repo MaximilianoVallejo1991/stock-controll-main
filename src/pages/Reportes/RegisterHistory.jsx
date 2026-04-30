@@ -211,7 +211,7 @@ export const RegisterHistory = () => {
 
                                     {/* BLOCKS CAJAS */}
                                     {isExpanded && (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-1 bg-black/10 dark:bg-white/5 p-1">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-1 bg-black/10 dark:bg-white/5 p-1">
 
                                             {/* CAJA FÍSICA (EFECTIVO) */}
                                             <div className="flex flex-col p-4 rounded-lg shadow-inner gap-2" style={{ backgroundColor: theme.bg }}>
@@ -287,6 +287,17 @@ export const RegisterHistory = () => {
                                                 </div>
                                             </div>
 
+                                            {/* CUENTA CORRIENTE (DEUDA) */}
+                                            <div className="flex flex-col p-4 rounded-lg shadow-inner gap-2 h-full" style={{ backgroundColor: theme.bg }}>
+                                                <div className="flex items-center gap-2 font-bold mb-2 pb-2 border-b text-orange-600" style={{ borderColor: theme.bg3 }}>
+                                                    <FaFileInvoiceDollar size={18} /> CUENTA CORRIENTE
+                                                </div>
+                                                <div className="flex-1 flex flex-col justify-center items-center">
+                                                    <span className="text-sm opacity-70 mb-1">Total Deuda Gen.:</span>
+                                                    <span className="text-2xl font-mono font-bold text-orange-600">${t.ventasCuentaCorriente.toFixed(2)}</span>
+                                                </div>
+                                            </div>
+
                                         </div>
                                     )}
 
@@ -313,6 +324,8 @@ export const RegisterHistory = () => {
                                                         if (method === 'Efectivo') badgeClass = 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
                                                         if (method === 'Transferencia') badgeClass = 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
                                                         if (method === 'Tarjeta') badgeClass = 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
+                                                        if (method === 'COMBINADO') badgeClass = 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
+                                                        if (method === 'CUENTA_CORRIENTE') badgeClass = 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
                                                         colorClass = 'text-green-600';
                                                     } else {
                                                         label = 'MOV. MANUAL';
@@ -337,7 +350,14 @@ export const RegisterHistory = () => {
                                                                     <span className="opacity-60 text-xs">{format(item.date, "HH:mm:ss")}</span>
                                                                 </div>
                                                                 <div className="opacity-80">
-                                                                    {item.isOrder ? `Venta #${item.id.slice(-6)} - Pago: ${method}` : `Motivo: ${item.description || "N/A"} (${method})`}
+                                                                    {item.isOrder ? (
+                                                                        <span>
+                                                                            Venta #{item.id.slice(-6)} - Pago: {method}
+                                                                            {item.amoutToPaid > 0 && (
+                                                                                <b className="ml-1 text-orange-600"> (Deuda: ${item.amoutToPaid.toFixed(2)})</b>
+                                                                            )}
+                                                                        </span>
+                                                                    ) : `Motivo: ${item.description || "N/A"} (${method})`}
                                                                 </div>
                                                             </div>
                                                             <div className={`font-mono font-bold text-base ${colorClass}`}>

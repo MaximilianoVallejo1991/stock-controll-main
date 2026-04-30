@@ -129,6 +129,7 @@ export const SalesHistory = () => {
                 <option value="Efectivo">Efectivo</option>
                 <option value="Tarjeta">Tarjeta</option>
                 <option value="Transferencia">Transferencia</option>
+                <option value="CUENTA_CORRIENTE">Cuenta Corriente</option>
               </select>
             </div>
           )}
