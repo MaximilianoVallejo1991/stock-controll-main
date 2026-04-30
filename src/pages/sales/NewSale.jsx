@@ -10,7 +10,7 @@ import useUserStore from "../../store/userStore";
 import usePosStore from "../../store/posStore";
 import { useNavigate } from "react-router-dom";
 import { formatCurrency } from "../../utils/currency";
-import { FaChevronUp, FaChevronDown, FaMagic, FaCheck, FaSearchPlus } from "react-icons/fa";
+import { FaChevronUp, FaChevronDown, FaMagic, FaCheck, FaSearchPlus, FaFileInvoiceDollar } from "react-icons/fa";
 import Modal from "../../components/Modals/Modal";
 import { useRef } from "react";
 
