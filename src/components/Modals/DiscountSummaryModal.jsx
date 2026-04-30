@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { formatCurrency } from "../../utils/currency";
-import { FaTimes, FaShoppingCart, FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { FaTimes, FaShoppingCart, FaChevronDown, FaChevronUp, FaFileInvoiceDollar } from "react-icons/fa";
 
 const DiscountSummaryModal = ({
   isOpen,
