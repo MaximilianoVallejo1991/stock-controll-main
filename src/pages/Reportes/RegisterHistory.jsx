@@ -12,6 +12,7 @@ import {
   FaCreditCard,
   FaExchangeAlt,
   FaFileExcel,
+  FaFileInvoiceDollar,
 } from "react-icons/fa";
 import { SaleDetail } from "../sales/SaleDetail";
 import DateRangeFilter from "../../components/Filters/DateRangeFilter";
