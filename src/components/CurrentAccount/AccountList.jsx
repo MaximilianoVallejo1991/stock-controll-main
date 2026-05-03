@@ -19,7 +19,7 @@ const AccountList = () => {
     const activeStore = useUserStore((state) => state.activeStore);
     const user = useUserStore((state) => state.user);
     const simulatedRole = useUserStore((state) => state.simulatedRole);
-    const currentRole = simulatedRole || user?.role;
+    const currentRole = (simulatedRole || user?.role)?.toUpperCase();
 
     const fetchAccounts = async () => {
         setIsLoading(true);

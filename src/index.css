@@ -23,3 +23,84 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+@media print {
+  /* OCULTAR TODO EL LAYOUT Y NAVEGACIÓN */
+  nav, 
+  aside, 
+  header,
+  footer,
+  .sidebar, /* Clase común para sidebars */
+  [class*="Sidebar"], /* Selectores por nombre de clase */
+  [class*="Layout_sidebar"],
+  button, 
+  .no-print,
+  .fixed,
+  .sticky {
+    display: none !important;
+    height: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* RESET TOTAL DEL CUERPO */
+  body, html {
+    background-color: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* FORZAR EL CONTENIDO PRINCIPAL A OCUPAR TODO EL ANCHO */
+  main, 
+  .main-content,
+  #root,
+  #root > div,
+  .h-screen,
+  .overflow-hidden,
+  .overflow-y-auto {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: static !important;
+    overflow: visible !important;
+  }
+
+  /* Reset de estilos de colores y sombras */
+  * {
+    background-color: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Tablas */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+  }
+  
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  th, td {
+    border: 1px solid #000 !important;
+    padding: 6px !important;
+    font-size: 9pt !important;
+  }
+
+  .print-force-bg {
+    background-color: #eee !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

@@ -37,7 +37,7 @@ const Sidebar = ({ menuItems = [], onLogout }) => {
 
   const handleStoreChange = (e) => {
     const newStoreId = e.target.value === "ALL" ? null : e.target.value;
-    
+
     // Si pasamos a modo Global (null) y estábamos simulando algo que requiere tienda,
     // quitamos la simulación para evitar que el backend nos rebote.
     if (!newStoreId && simulatedRole && simulatedRole !== ROLES.SISTEMA) {
@@ -64,7 +64,7 @@ const Sidebar = ({ menuItems = [], onLogout }) => {
 
   const handleImageClick = async () => {
     if (!user) return;
-    
+
     // Abrir modal inmediatamente (se mostrará el profilePicture actual mientras carga el resto)
     setIsPreviewOpen(true);
 
@@ -86,8 +86,8 @@ const Sidebar = ({ menuItems = [], onLogout }) => {
   };
 
   return (
-    <div
-      className={`h-full transition-all duration-300 flex flex-col justify-between shrink-0 ${isOpen ? "w-64" : "w-20"
+    <aside
+      className={`h-full transition-all duration-300 flex flex-col justify-between shrink-0 no-print ${isOpen ? "w-64" : "w-20"
         }`}
       style={{ backgroundColor: theme.bg2, color: theme.text }}
     >
@@ -217,7 +217,7 @@ const Sidebar = ({ menuItems = [], onLogout }) => {
           onImageSetMain={handleImageSetMain}
         />
       )}
-    </div>
+    </aside>
   );
 };
 

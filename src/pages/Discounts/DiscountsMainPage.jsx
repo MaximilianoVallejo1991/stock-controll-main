@@ -35,7 +35,7 @@ const DiscountsMainPage = () => {
 
   const user = useUserStore((state) => state.user);
   const simulatedRole = useUserStore((state) => state.simulatedRole);
-  const effectiveRole = simulatedRole || user?.role;
+  const effectiveRole = (simulatedRole || user?.role)?.toUpperCase();
   const canManageDiscounts = [ROLES.SISTEMA, ROLES.ADMINISTRADOR, ROLES.ENCARGADO].includes(effectiveRole);
 
   const {

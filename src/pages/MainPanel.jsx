@@ -16,7 +16,7 @@ const MainPanel = () => {
   const { theme } = useTheme();
   const user = useUserStore((state) => state.user);
   const simulatedRole = useUserStore((state) => state.simulatedRole);
-  const effectiveRole = simulatedRole || user?.role;
+  const effectiveRole = (simulatedRole || user?.role)?.toUpperCase();
 
   const sections = [
     { label: "Personal", icon: User, route: "/employees", roles: [ROLES.SISTEMA, ROLES.ADMINISTRADOR] },

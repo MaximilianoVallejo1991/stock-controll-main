@@ -1,52 +1,40 @@
 schema: spec-driven
 
 context: |
-  Tech stack: Vite + React + Tailwind CSS 4
-  Architecture: Component-based
-  Testing: Not found
+  Tech stack: React 19.1, Vite, Tailwind CSS 4, Zustand, React Router, Axios, TanStack Table
+  Architecture: SPA Frontend consuming REST API, centralized state with Zustand
+  Testing: Not installed
   Style: ESLint
 
 strict_tdd: false
 
 testing:
-  ## Testing Capabilities
-  **Strict TDD Mode**: disabled
-  **Detected**: 2026-04-29
-  
-  ### Test Runner
-  - Command: —
-  - Framework: NOT FOUND
-  
-  ### Test Layers
-  | Layer | Available | Tool |
-  |-------|-----------|------|
-  | Unit | ❌ | — |
-  | Integration | ❌ | — |
-  | E2E | ❌ | — |
-  
-  ### Coverage
-  - Available: ❌
-  - Command: —
-  
-  ### Quality Tools
-  | Tool | Available | Command |
-  |------|-----------|---------|
-  | Linter | ✅ | eslint |
-  | Type checker | ❌ | — |
-  | Formatter | ❌ | — |
+  runner: Not found
+  unit: false
+  integration: false
+  e2e: false
+  coverage: false
+  linter: "npm run lint"
+  type_checker: false
 
 rules:
   proposal:
     - Include rollback plan for risky changes
+    - Identify affected modules/packages
   specs:
-    - Use Given/When/Then format
+    - Use Given/When/Then format for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
   design:
-    - Atomic design principles
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
   tasks:
-    - Batch by components
+    - Group tasks by phase (infrastructure, implementation, testing)
+    - Use hierarchical numbering (1.1, 1.2, etc.)
+    - Keep tasks small enough to complete in one session
   apply:
-    - React 19 standards
+    - Follow existing code patterns and conventions
+    - Load relevant coding skills for the project stack
   verify:
-    - Visual verification
+    - Compare implementation against every spec scenario
   archive:
-    - Clean up unused assets
+    - Warn before merging destructive deltas (large removals)

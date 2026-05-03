@@ -25,7 +25,7 @@ export const GenericTableSection = ({ title, endpoint, fields, columns, createRo
   const user = useUserStore((state) => state.user);
   const simulatedRole = useUserStore((state) => state.simulatedRole);
   const activeStore = useUserStore((state) => state.activeStore);
-  const currentRole = simulatedRole || user?.role; // Sincronizado con el modo simulación
+  const currentRole = (simulatedRole || user?.role)?.toUpperCase(); // Sincronizado con el modo simulación
   const canCreate = !createRoles || createRoles.includes(currentRole);
 
   console.log("role actual:", currentRole);

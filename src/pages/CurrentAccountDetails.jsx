@@ -11,6 +11,8 @@ import MessageModal from "../components/Modals/MessageModal";
 import ConfirmModal from "../components/Modals/ConfirmModal";
 import RegisterPaymentModal from "../components/Modals/RegisterPaymentModal";
 import { FaFileInvoiceDollar, FaDollarSign } from "react-icons/fa";
+import useUserStore from "../store/userStore";
+import { ROLES } from "../constants/roles";
 
 
 const CurrentAccountDetails = () => {
@@ -22,6 +24,11 @@ const CurrentAccountDetails = () => {
     const [message, setMessage] = useState({ isOpen: false, text: "", type: "info" });
     const [isConfirmCloseOpen, setIsConfirmCloseOpen] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const user = useUserStore((state) => state.user);
+    const simulatedRole = useUserStore((state) => state.simulatedRole);
+    const currentRole = (simulatedRole || user?.role)?.toUpperCase();
+    
+    const canManageAccount = [ROLES.SISTEMA, ROLES.ADMINISTRADOR, ROLES.ENCARGADO].includes(currentRole);
 
     const fetchAccountData = async () => {
         setIsLoading(true);
@@ -125,39 +132,51 @@ const CurrentAccountDetails = () => {
     if (!account) return <div className="p-10 text-center">No se encontró la cuenta.</div>;
 
     return (
-        <div className="p-4 sm:p-8 max-w-6xl mx-auto space-y-6">
+        <div className="p-4 sm:p-8 max-w-6xl mx-auto space-y-6 print:m-0 print:p-0">
+            {/* Encabezado formal solo para impresión */}
+            <div className="hidden print:flex justify-between items-end border-b-2 border-black pb-4 mb-8">
+                <div>
+                    <h1 className="text-3xl font-black uppercase tracking-tighter">Reporte de Cuenta Corriente</h1>
+                    <p className="text-xs font-bold opacity-70">Generado el: {format(new Date(), "dd/MM/yyyy HH:mm")}</p>
+                </div>
+                <div className="text-right">
+                    <p className="font-bold text-lg">StockControl</p>
+                    <p className="text-[10px]">Gestión Integral de Negocios</p>
+                </div>
+            </div>
+
             <button
                 onClick={() => navigate("/accounts")}
-                className="flex items-center gap-2 text-sm font-bold opacity-70 hover:opacity-100 transition-all mb-2"
+                className="flex items-center gap-2 text-sm font-bold opacity-70 hover:opacity-100 transition-all mb-2 no-print"
             >
                 <FaArrowLeft /> Volver a Cuentas
             </button>
 
             {/* Header de Cuenta */}
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-                <div className="p-6 sm:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden print:shadow-none print:border-none">
+                <div className="p-6 sm:p-8 flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex gap-4 items-center">
-                        <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-inner">
+                        <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-inner print:hidden">
                             {account.client.lastName[0]}{account.client.firstName[0]}
                         </div>
                         <div>
                             <h1 className="text-2xl sm:text-3xl font-black">{account.client.lastName}, {account.client.firstName}</h1>
                             <div className="flex gap-2 items-center mt-1">
                                 <span className="text-xs font-bold opacity-50 uppercase tracking-widest">DNI: {account.client.dni}</span>
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black tracking-tighter ${account.status === 'OPEN' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black tracking-tighter print-force-bg ${account.status === 'OPEN' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                     {account.status === 'OPEN' ? 'CUENTA ABIERTA' : 'CUENTA CERRADA'}
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-zinc-50 dark:bg-zinc-800 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 flex flex-col items-end min-w-[200px]">
+                    <div className="bg-zinc-50 dark:bg-zinc-800 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 flex flex-col items-end min-w-[200px] print:border-none print:bg-transparent">
                         <p className="text-xs font-bold opacity-50 uppercase mb-1">Saldo Actual</p>
                         <p className={`text-3xl font-black ${account.balance > 0 ? 'text-red-500' : 'text-green-500'}`}>
                             {formatCurrency(account.balance)}
                         </p>
-                        <div className="flex gap-2 mt-4">
-                            {account.status === 'OPEN' && account.balance === 0 && (
+                        <div className="flex gap-2 mt-4 no-print">
+                            {canManageAccount && account.status === 'OPEN' && account.balance === 0 && (
                                 <ThemedButton
                                     className="!bg-red-600 !text-white !py-1 text-xs flex items-center gap-1"
                                     onClick={() => setIsConfirmCloseOpen(true)}
@@ -165,7 +184,7 @@ const CurrentAccountDetails = () => {
                                     <FaBan size={10} /> Cerrar Cuenta
                                 </ThemedButton>
                             )}
-                            {account.status === 'OPEN' && (
+                            {canManageAccount && account.status === 'OPEN' && (
                                 <ThemedButton
                                     className="!bg-green-600 !text-white !py-1 text-xs flex items-center gap-1"
                                     onClick={() => setIsPaymentModalOpen(true)}

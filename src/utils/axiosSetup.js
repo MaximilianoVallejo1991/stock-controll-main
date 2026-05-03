@@ -22,7 +22,7 @@ axios.interceptors.request.use(
 
         // Enviar rol simulado si existe (el backend lo validará contra el JWT real)
         if (simulatedRole) {
-          config.headers['x-simulated-role'] = simulatedRole;
+          config.headers['x-simulated-role'] = simulatedRole.toUpperCase();
         }
       } catch (e) {
         console.warn('[Axios] No se pudo leer state del storage. Posible dato corrupto.', e.message);

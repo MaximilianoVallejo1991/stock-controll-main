@@ -3,11 +3,16 @@ import { useLocation } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import AccountList from "../components/CurrentAccount/AccountList";
 import PaymentForm from "../components/CurrentAccount/PaymentForm";
+import useUserStore from "../store/userStore";
+import { ROLES } from "../constants/roles";
 
 export const CurrentAccounts = () => {
     const { theme } = useTheme();
     const location = useLocation();
     const [activeTab, setActiveTab] = useState("accounts"); // accounts, payment
+    const user = useUserStore((state) => state.user);
+    const simulatedRole = useUserStore((state) => state.simulatedRole);
+    const currentRole = (simulatedRole || user?.role)?.toUpperCase();
 
     // Reset to "accounts" tab whenever the user navigates into this route
     useEffect(() => {
@@ -28,13 +33,16 @@ export const CurrentAccounts = () => {
                 >
                     <span className="text-xl">📋</span> Cuentas Corrientes
                 </button>
-                <button
-                    onClick={() => setActiveTab("payment")}
-                    className={`pb-3 font-bold transition-all flex items-center gap-2 ${activeTab === "payment" ? "" : "opacity-60 hover:opacity-100 hover:border-b-[3px] hover:border-black/10 dark:hover:border-white/10"}`}
-                    style={activeTab === "payment" ? { color: theme.info, borderBottom: `3px solid ${theme.info}` } : {}}
-                >
-                    <span className="text-xl">💰</span> Cobrar Cuota
-                </button>
+
+                {[ROLES.SISTEMA, ROLES.ADMINISTRADOR, ROLES.ENCARGADO].includes(currentRole) && (
+                    <button
+                        onClick={() => setActiveTab("payment")}
+                        className={`pb-3 font-bold transition-all flex items-center gap-2 ${activeTab === "payment" ? "" : "opacity-60 hover:opacity-100 hover:border-b-[3px] hover:border-black/10 dark:hover:border-white/10"}`}
+                        style={activeTab === "payment" ? { color: theme.info, borderBottom: `3px solid ${theme.info}` } : {}}
+                    >
+                        <span className="text-xl">💰</span> Cobrar Cuota
+                    </button>
+                )}
             </div>
 
             <div className="flex-1 overflow-hidden bg-black/5 dark:bg-white/5 flex flex-col relative">

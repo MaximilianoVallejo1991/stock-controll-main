@@ -13,7 +13,7 @@ const MainLayout = () => {
   const simulatedRole = useUserStore((state) => state.simulatedRole);
 
   // El rol efectivo para filtrar el menú: si hay simulación activa, úsala; si no, el rol real.
-  const effectiveRole = simulatedRole || user?.role;
+  const effectiveRole = (simulatedRole || user?.role)?.toUpperCase();
 
   const rawMenuItems = [
     { label: "Panel Principal", onClick: () => navigate("/MainPanel"), roles: [ROLES.SISTEMA, ROLES.ADMINISTRADOR, ROLES.ENCARGADO, ROLES.VENDEDOR] },
