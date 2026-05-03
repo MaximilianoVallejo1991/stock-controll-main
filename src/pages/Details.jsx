@@ -11,7 +11,7 @@ import ImagePreviewModal from "../components/Modals/ImagePreviewModal";
 import ImageManagerModal from "../components/Modals/ImageManagerModal";
 import ConfirmAdminPasswordModal from "../components/Modals/ConfirmAdminPasswordModal";
 import StockAdjustModal from "../components/Modals/StockAdjustModal";
-import { translate } from "../utils/translator";
+import { translate, translateField } from "../utils/translator";
 import {
   isValidCUIT,
   isValidDNI,
@@ -769,7 +769,8 @@ const Details = () => {
                 "tempPassword",
                 "mustChangePassword",
                 "roleId",
-                "rbacRole"
+                "rbacRole",
+                "currentAccount"
               ];
 
               if (baseExcluded.includes(key)) return false;
@@ -789,7 +790,7 @@ const Details = () => {
             .map(([key, value]) => (
               <div key={key}>
                 <p className="font-semibold capitalize" style={{ color: theme.colorsubtitlecard }}>
-                  {key}
+                  {translateField(key)}
                 </p>
                 {isEditing && !ENTITY_FIELD_RULES[entity]?.readOnly?.includes(key) ?
                   key === "categoryId" && entity === "products" ? (
