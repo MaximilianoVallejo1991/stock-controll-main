@@ -1,4 +1,4 @@
-import { Navigate, useParams, useLocation } from "react-router-dom";
+import { Navigate, useParams, useLocation, useNavigate } from "react-router-dom";
 import { use, useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { format } from "date-fns";
@@ -6,7 +6,7 @@ import JsBarcode from "jsbarcode";
 import { useTheme } from "../context/ThemeContext";
 import ThemedButton from "../components/ThemedButton";
 import MessageModal from "../components/Modals/MessageModal";
-import { Pencil } from "lucide-react";
+import { Pencil, CreditCard } from "lucide-react";
 import ImagePreviewModal from "../components/Modals/ImagePreviewModal";
 import ImageManagerModal from "../components/Modals/ImageManagerModal";
 import ConfirmAdminPasswordModal from "../components/Modals/ConfirmAdminPasswordModal";
@@ -25,6 +25,7 @@ import useUserStore from "../store/userStore";
 
 const Details = () => {
   const { id, entity: entityParam } = useParams();
+  const navigate = useNavigate();
   const location = useLocation();
   const { theme } = useTheme();
   const [data, setData] = useState(null);
@@ -252,6 +253,34 @@ const Details = () => {
         setLoading(false);
         setIsAdminPasswordOpen(false);
         setAdminPasswordAction(null);
+      });
+  };
+
+  const handleOpenCurrentAccount = () => {
+    if (isSaving.current) return;
+    isSaving.current = true;
+    setLoading(true);
+
+    axios.post("/api/accounts/open", { clientId: id })
+      .then((res) => {
+        fetchData(); // Recargar para obtener la cuenta recién creada
+        setMessageModal({
+          isOpen: true,
+          text: "Cuenta corriente abierta con éxito",
+          type: "success"
+        });
+      })
+      .catch((err) => {
+        console.error("Error al abrir cuenta corriente", err);
+        setMessageModal({
+          isOpen: true,
+          text: err.response?.data?.message || "Error al abrir la cuenta corriente",
+          type: "error"
+        });
+      })
+      .finally(() => {
+        isSaving.current = false;
+        setLoading(false);
       });
   };
 
@@ -644,6 +673,27 @@ const Details = () => {
               <div className="flex gap-2">
 
 
+
+                {entity === "clients" && !data.currentAccount && canEditCurrentEntity && (
+                  <ThemedButton
+                    onClick={handleOpenCurrentAccount}
+                    className="flex items-center gap-2"
+                  >
+                    <CreditCard size={18} />
+                    Abrir Cuenta Corriente
+                  </ThemedButton>
+                )}
+
+                {entity === "clients" && data.currentAccount && data.currentAccount.status === "OPEN" && (
+                  <ThemedButton
+                    variant="secondary"
+                    onClick={() => navigate(`/accounts/details/${data.currentAccount.id}`)}
+                    className="flex items-center gap-2"
+                  >
+                    <CreditCard size={18} />
+                    Cuenta Corriente
+                  </ThemedButton>
+                )}
 
                 {canEditCurrentEntity && (
                   <ThemedButton

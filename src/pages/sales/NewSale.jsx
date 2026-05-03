@@ -48,6 +48,7 @@ const NewSale = () => {
 
   const [mockProducts, setMockProducts] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [clientSelectedIndex, setClientSelectedIndex] = useState(0);
   const [categories, setCategories] = useState(["Todas"]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentSale, setCurrentSale] = useState(null);
@@ -159,21 +160,22 @@ const NewSale = () => {
     setSelectedIndex(0);
   }, [search, category]);
 
+  useEffect(() => {
+    setClientSelectedIndex(0);
+  }, [clientSearchText]);
+
   const handleKeyDown = (e) => {
     if (!filteredProducts.length) return;
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
-
       let next = selectedIndex;
-
       do {
         next++;
       } while (
         next < filteredProducts.length &&
         filteredProducts[next].stock === 0
       );
-
       if (next < filteredProducts.length) {
         setSelectedIndex(next);
       }
@@ -181,19 +183,51 @@ const NewSale = () => {
 
     if (e.key === "ArrowUp") {
       e.preventDefault();
-      setSelectedIndex(prev =>
-        prev > 0 ? prev - 1 : prev
-      );
+      setSelectedIndex(prev => (prev > 0 ? prev - 1 : prev));
     }
 
     if (e.key === "Enter") {
       e.preventDefault();
-
       const product = filteredProducts[selectedIndex];
-
       if (product.stock > 0) {
         addToCart(product);
       }
+    }
+  };
+
+  const handleClientKeyDown = (e) => {
+    if (!showClientDropdown) return;
+
+    // 0 es "Consumidor Final", 1+ son los clientes filtrados
+    const totalOptions = filteredClientsSearch.length + 1;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setClientSelectedIndex(prev => (prev < totalOptions - 1 ? prev + 1 : prev));
+    }
+
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setClientSelectedIndex(prev => (prev > 0 ? prev - 1 : 0));
+    }
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (clientSelectedIndex === 0) {
+        setSelectedClient(null);
+        setClientSearchText("");
+        setShowClientDropdown(false);
+      } else {
+        const client = filteredClientsSearch[clientSelectedIndex - 1];
+        if (client) {
+          setSelectedClient(client);
+          setShowClientDropdown(false);
+        }
+      }
+    }
+
+    if (e.key === "Escape") {
+      setShowClientDropdown(false);
     }
   };
 
@@ -498,6 +532,7 @@ const NewSale = () => {
                 }}
                 onFocus={() => setShowClientDropdown(true)}
                 onBlur={() => setTimeout(() => setShowClientDropdown(false), 200)}
+                onKeyDown={handleClientKeyDown}
                 placeholder="Buscar cliente por nombre o DNI (vacio = Consumidor Final)..."
                 className="flex-1 p-2 rounded outline-none"
                 style={{ backgroundColor: theme.bg }}
@@ -512,7 +547,10 @@ const NewSale = () => {
             >
               <div
                 className="p-2 cursor-pointer hover:bg-black/10 border-b font-semibold text-green-600"
-                style={{ borderColor: theme.bg3 }}
+                style={{ 
+                  borderColor: theme.bg3,
+                  backgroundColor: clientSelectedIndex === 0 ? "rgba(0,0,0,0.1)" : "transparent"
+                }}
                 onClick={() => {
                   setSelectedClient(null);
                   setClientSearchText("");
@@ -522,11 +560,14 @@ const NewSale = () => {
                 Consumidor Final
               </div>
               {filteredClientsSearch.length > 0 ? (
-                filteredClientsSearch.map(c => (
+                filteredClientsSearch.map((c, idx) => (
                   <div
                     key={c.id}
                     className="p-2 cursor-pointer transition-colors hover:bg-black/10 border-b last:border-0"
-                    style={{ borderColor: theme.bg3 }}
+                    style={{ 
+                      borderColor: theme.bg3,
+                      backgroundColor: clientSelectedIndex === (idx + 1) ? "rgba(0,0,0,0.1)" : "transparent"
+                    }}
                     onClick={() => {
                       setSelectedClient(c);
                       setShowClientDropdown(false);

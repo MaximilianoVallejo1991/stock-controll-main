@@ -9,7 +9,8 @@ import { Estadistics } from "../pages/Estadistics";
 import { Calculator } from "../pages/Calculator";
 import { Chat } from "../pages/Chat";
 import { Profile } from "../pages/Profile";
-import { Clients } from "../pages/Clients";
+import ClientsMainPage from "../pages/Clients/ClientsMainPage";
+import ClientsList from "../pages/Clients/ClientsList";
 import { Employees } from "../pages/Employees";
 import { Suppliers } from "../pages/Suppliers";
 import Stock from "../pages/Stock";
@@ -51,7 +52,8 @@ export const routes = createBrowserRouter([
       { path: "chat", element: <Chat /> },
       { path: "profile", element: <Profile /> },
       { path: "stores", element: <RoleRoute allowedRoles={[ROLES.SISTEMA]}><Stores /></RoleRoute> },
-      { path: "clients", element: <Clients /> },
+      { path: "clients", element: <ClientsMainPage /> },
+      { path: "clients/list", element: <ClientsList /> },
       { path: "employees", element: <RoleRoute allowedRoles={[ROLES.SISTEMA, ROLES.ADMINISTRADOR]}><Employees /></RoleRoute> },
       { path: "stock", element: <RoleRoute allowedRoles={[ROLES.SISTEMA, ROLES.ADMINISTRADOR]}><Stock /></RoleRoute> },
       { path: "suppliers", element: <RoleRoute allowedRoles={[ROLES.SISTEMA, ROLES.ADMINISTRADOR, ROLES.ENCARGADO, ROLES.VENDEDOR]}><Suppliers /></RoleRoute> },

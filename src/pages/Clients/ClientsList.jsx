@@ -1,6 +1,6 @@
-import GenericTableSection from "../components/GenericTableSection";
+import GenericTableSection from "../../components/GenericTableSection";
 
-export const Clients = () => {
+export const ClientsList = () => {
 
   const fields = [
     { name: "firstName", label: "Nombre" },
@@ -25,7 +25,7 @@ export const Clients = () => {
 
   return (
     <GenericTableSection
-      title="Clientes"
+      title="Listado de Clientes"
       endpoint="clients"
       exportEndpoint="clients"
       fields={fields}
@@ -33,4 +33,4 @@ export const Clients = () => {
     />
   );
 };
-export default Clients;
+export default ClientsList;

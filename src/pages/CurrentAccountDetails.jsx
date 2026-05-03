@@ -9,7 +9,8 @@ import { format } from "date-fns";
 import { FaArrowLeft, FaBan, FaCheckCircle, FaPrint } from "react-icons/fa";
 import MessageModal from "../components/Modals/MessageModal";
 import ConfirmModal from "../components/Modals/ConfirmModal";
-import { FaFileInvoiceDollar } from "react-icons/fa";
+import RegisterPaymentModal from "../components/Modals/RegisterPaymentModal";
+import { FaFileInvoiceDollar, FaDollarSign } from "react-icons/fa";
 
 
 const CurrentAccountDetails = () => {
@@ -20,6 +21,7 @@ const CurrentAccountDetails = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [message, setMessage] = useState({ isOpen: false, text: "", type: "info" });
     const [isConfirmCloseOpen, setIsConfirmCloseOpen] = useState(false);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
     const fetchAccountData = async () => {
         setIsLoading(true);
@@ -48,6 +50,24 @@ const CurrentAccountDetails = () => {
             setMessage({
                 isOpen: true,
                 text: err.response?.data?.message || "No se pudo cerrar la cuenta.",
+                type: "error"
+            });
+        }
+    };
+
+    const handleRegisterPayment = async (paymentData) => {
+        setIsPaymentModalOpen(false);
+        try {
+            await axios.post("/api/accounts/payment", {
+                clientId: account.clientId,
+                ...paymentData
+            });
+            setMessage({ isOpen: true, text: "Pago registrado exitosamente.", type: "success" });
+            fetchAccountData(); // Recargar saldo y movimientos
+        } catch (err) {
+            setMessage({
+                isOpen: true,
+                text: err.response?.data?.message || "No se pudo registrar el pago.",
                 type: "error"
             });
         }
@@ -145,6 +165,14 @@ const CurrentAccountDetails = () => {
                                     <FaBan size={10} /> Cerrar Cuenta
                                 </ThemedButton>
                             )}
+                            {account.status === 'OPEN' && (
+                                <ThemedButton
+                                    className="!bg-green-600 !text-white !py-1 text-xs flex items-center gap-1"
+                                    onClick={() => setIsPaymentModalOpen(true)}
+                                >
+                                    <FaDollarSign size={10} /> Registrar Pago
+                                </ThemedButton>
+                            )}
                             <ThemedButton
                                 className="!bg-zinc-700 !text-white !py-1 text-xs flex items-center gap-1"
                                 onClick={() => window.print()}
@@ -180,6 +208,13 @@ const CurrentAccountDetails = () => {
                 onClose={() => setMessage({ ...message, isOpen: false })}
                 message={message.text}
                 type={message.type}
+            />
+
+            <RegisterPaymentModal
+                isOpen={isPaymentModalOpen}
+                onClose={() => setIsPaymentModalOpen(false)}
+                onConfirm={handleRegisterPayment}
+                currentBalance={account.balance}
             />
         </div>
     );
