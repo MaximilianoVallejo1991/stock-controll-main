@@ -373,17 +373,36 @@ export const SaleDetail = ({ isOpen, onClose, saleData, onCancelSuccess }) => {
 
         <style>{`
           @media print {
+            @page {
+              size: 80mm auto;
+              margin: 0;
+            }
+            body {
+              background: white !important;
+              margin: 0;
+              padding: 0;
+            }
             body * { visibility: hidden; }
             .print-container, .print-container * { visibility: visible; }
             .print-container {
-              position: absolute; left: 0; top: 0;
-              width: 100%; height: 100%;
-              margin: 0; padding: 20px;
-              box-shadow: none;
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 80mm !important;
+              max-width: 80mm !important;
+              margin: 0;
+              padding: 5mm;
+              box-shadow: none !important;
               background: white !important;
               color: black !important;
+              font-size: 10pt !important;
             }
             .no-print { display: none !important; }
+            
+            /* Ajustes finos para que el ticket no se corte */
+            .print-container h1 { font-size: 14pt !important; margin-bottom: 2mm !important; }
+            .print-container p, .print-container span { font-size: 9pt !important; }
+            .print-container .border-b, .print-container .border-t { border-color: #000 !important; }
           }
         `}</style>
       </div>

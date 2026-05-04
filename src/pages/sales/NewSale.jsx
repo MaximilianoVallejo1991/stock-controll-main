@@ -10,7 +10,8 @@ import useUserStore from "../../store/userStore";
 import usePosStore from "../../store/posStore";
 import { useNavigate } from "react-router-dom";
 import { formatCurrency } from "../../utils/currency";
-import { FaChevronUp, FaChevronDown, FaMagic, FaCheck, FaSearchPlus, FaFileInvoiceDollar } from "react-icons/fa";
+import { FaChevronUp, FaChevronDown, FaMagic, FaCheck, FaSearchPlus, FaFileInvoiceDollar, FaShoppingCart, FaUsers } from "react-icons/fa";
+import { RiCloseLine } from "react-icons/ri";
 import Modal from "../../components/Modals/Modal";
 import { useRef } from "react";
 
@@ -62,10 +63,12 @@ const NewSale = () => {
   const [customerPayment, setCustomerPayment] = useState("");
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
   const [discountPreview, setDiscountPreview] = useState(null);
-  const [preferredRuleIds, setPreferredRuleIds] = useState([]); 
+  const [preferredRuleIds, setPreferredRuleIds] = useState([]);
   const [excludedRuleIds, setExcludedRuleIds] = useState([]);   // Reglas silenciadas manualmente (SC-3.0)
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
+  const [isClientExpanded, setIsClientExpanded] = useState(false);
+  const [isPaymentExpanded, setIsPaymentExpanded] = useState(false);
 
   useEffect(() => {
     // Si cambia el carrito, invalidamos el preview de descuentos para forzar un recálculo si deciden confirmar.
@@ -334,7 +337,7 @@ const NewSale = () => {
         preferredRuleIds,
         excludedRuleIds // Enviamos exclusiones
       };
-      
+
       const response = await axios.post('/api/discounts/preview', payload);
       setDiscountPreview(response.data);
     } catch (err) {
@@ -349,14 +352,14 @@ const NewSale = () => {
   const handleOpenDiscountModal = async () => {
     // 1. Siempre lanzamos una petición limpia al abrir para sincronizar (Reset preferences)
     const freshPreview = await fetchDiscountPreviewWithParams([], []);
-    
+
     // 2. Cargamos como preferidos lo que el sistema propuso por defecto (Freeze State)
     if (freshPreview?.appliedDiscounts) {
       const currentAppliedIds = freshPreview.appliedDiscounts.map(d => d.ruleId);
       setPreferredRuleIds(currentAppliedIds);
       setExcludedRuleIds([]);
     }
-    
+
     setIsDiscountModalOpen(true);
   };
 
@@ -364,7 +367,7 @@ const NewSale = () => {
   const handleToggleRule = (ruleId) => {
     // Si la regla YA está en preferidos, la quitamos y la mandamos a excluidos (Strict Toggle)
     const isCurrentlyPreferred = preferredRuleIds.includes(ruleId);
-    
+
     let nextPreferred = [...preferredRuleIds];
     let nextExcluded = [...excludedRuleIds];
 
@@ -380,7 +383,7 @@ const NewSale = () => {
 
     setPreferredRuleIds(nextPreferred);
     setExcludedRuleIds(nextExcluded);
-    
+
     // Lanzamos preview automáticamente con la nueva configuración
     fetchDiscountPreviewWithParams(nextPreferred, nextExcluded);
   };
@@ -416,7 +419,7 @@ const NewSale = () => {
         preferredRuleIds: preferred,
         excludedRuleIds: excluded
       };
-      
+
       const response = await axios.post('/api/discounts/preview', payload);
       setDiscountPreview(response.data);
       return response.data; // Retornamos para uso en handlers
@@ -436,7 +439,7 @@ const NewSale = () => {
       setIsDiscountModalOpen(false);
       setIsCartModalOpen(false);
       setDiscountPreview(null);
-      
+
       // Enviamos el subtotal (sin descuentos) para validación del backend
       const saleData = {
         amount: total,  // subtotal sin descuentos - para validación
@@ -500,253 +503,288 @@ const NewSale = () => {
 
 
   return (
-    <div className="h-full flex flex-col gap-4 overflow-y-auto no-scrollbar" style={{ backgroundColor: theme.bgtotal, color: theme.text }}>
-      <h1 className="text-2xl font-bold">Nueva Venta</h1>
+    <div className="h-full flex flex-col gap-4 overflow-y-auto no-scrollbar relative" style={{ backgroundColor: theme.bgtotal, color: theme.text }}>
+      <h1 className="text-xl md:text-2xl font-bold px-4 md:px-0">Nueva Venta</h1>
 
       {/* TICKET SETTINGS (Top Bar) */}
-      <div className="flex flex-col md:flex-row gap-4 p-4 rounded-lg items-center" style={{ backgroundColor: theme.bgcards, boxShadow: v.boxshadowGray }}>
+      <div className="flex flex-col lg:flex-row gap-2 md:gap-4 p-2 md:p-4 rounded-xl z-30" style={{ backgroundColor: theme.bgcards, boxShadow: v.boxshadowGray }}>
 
-        {/* Client Search */}
-        <div className="flex-1 relative flex flex-col gap-1 z-20">
-          <label className="text-sm font-semibold">Cliente</label>
-          <div className="flex items-center">
-            {selectedClient ? (
-              <div
-                className="flex flex-1 justify-between items-center p-2 rounded cursor-pointer border ring-1 ring-green-500"
-                style={{ backgroundColor: theme.bg3, borderColor: theme.bg }}
-                onClick={() => {
-                  setSelectedClient(null);
-                  setClientSearchText("");
-                  setShowClientDropdown(true);
-                }}
-              >
-                <span>{selectedClient.firstName} {selectedClient.lastName} {selectedClient.dni && `(${selectedClient.dni})`}</span>
-                <span className="text-sm opacity-60 hover:opacity-100">Cambiar</span>
-              </div>
-            ) : (
-              <input
-                value={clientSearchText}
-                onChange={(e) => {
-                  setClientSearchText(e.target.value);
-                  setShowClientDropdown(true);
-                }}
-                onFocus={() => setShowClientDropdown(true)}
-                onBlur={() => setTimeout(() => setShowClientDropdown(false), 200)}
-                onKeyDown={handleClientKeyDown}
-                placeholder="Buscar cliente por nombre o DNI (vacio = Consumidor Final)..."
-                className="flex-1 p-2 rounded outline-none"
-                style={{ backgroundColor: theme.bg }}
-              />
-            )}
+        {/* --- SECCIÓN CLIENTE (Acordeón en Mobile) --- */}
+        <div className={`flex-1 flex flex-col ${isClientExpanded ? '' : 'lg:overflow-visible overflow-hidden'}`}>
+          {/* Header del Acordeón (Mobile) / Título (Desktop) */}
+          <div
+            onClick={() => window.innerWidth < 1024 && setIsClientExpanded(!isClientExpanded)}
+            className="flex items-center justify-between p-3 lg:p-0 cursor-pointer lg:cursor-default rounded-lg hover:bg-black/5 lg:hover:bg-transparent"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-blue-500"><FaUsers size={18} /></span>
+              <span className="text-sm font-bold uppercase tracking-wider opacity-70 lg:hidden">
+                Cliente: {selectedClient ? `${selectedClient.firstName} ${selectedClient.lastName}` : 'Consumidor Final'}
+              </span>
+              <span className="hidden lg:inline text-sm font-bold uppercase tracking-wider opacity-70">Información del Cliente</span>
+            </div>
+            <span className="lg:hidden opacity-50">
+              {isClientExpanded ? <FaChevronUp size={14} /> : <FaChevronDown size={14} />}
+            </span>
           </div>
 
-          {!selectedClient && showClientDropdown && (
-            <div
-              className="absolute top-full mt-1 w-full max-h-48 overflow-y-auto no-scrollbar rounded shadow-lg border z-50"
-              style={{ backgroundColor: theme.bgcards, borderColor: theme.bg3 }}
-            >
-              <div
-                className="p-2 cursor-pointer hover:bg-black/10 border-b font-semibold text-green-600"
-                style={{ 
-                  borderColor: theme.bg3,
-                  backgroundColor: clientSelectedIndex === 0 ? "rgba(0,0,0,0.1)" : "transparent"
-                }}
-                onClick={() => {
-                  setSelectedClient(null);
-                  setClientSearchText("");
-                  setShowClientDropdown(false);
-                }}
-              >
-                Consumidor Final
-              </div>
-              {filteredClientsSearch.length > 0 ? (
-                filteredClientsSearch.map((c, idx) => (
+          {/* Contenido Desplegable */}
+          <div className={`${isClientExpanded ? 'block' : 'hidden lg:block'} mt-2 lg:mt-1 animate-in fade-in slide-in-from-top-2 duration-200`}>
+            <div className="relative flex flex-col gap-1">
+              <div className="flex items-center">
+                {selectedClient ? (
                   <div
-                    key={c.id}
-                    className="p-2 cursor-pointer transition-colors hover:bg-black/10 border-b last:border-0"
-                    style={{ 
+                    className="flex flex-1 justify-between items-center p-3 rounded-xl border-2 ring-1 ring-green-500/30 transition-all active:scale-[0.98]"
+                    style={{ backgroundColor: theme.bg, borderColor: theme.success }}
+                    onClick={() => {
+                      setSelectedClient(null);
+                      setClientSearchText("");
+                      setShowClientDropdown(true);
+                    }}
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-bold text-sm">{selectedClient.firstName} {selectedClient.lastName}</span>
+                      <span className="text-[10px] opacity-60 uppercase">DNI: {selectedClient.dni || 'Sin DNI'}</span>
+                    </div>
+                    <span className="text-xs font-bold text-blue-500 bg-blue-500/10 px-2 py-1 rounded-lg">CAMBIAR</span>
+                  </div>
+                ) : (
+                  <div className="relative flex-1 group">
+                    <input
+                      value={clientSearchText}
+                      onChange={(e) => {
+                        setClientSearchText(e.target.value);
+                        setShowClientDropdown(true);
+                      }}
+                      onFocus={() => setShowClientDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowClientDropdown(false), 200)}
+                      onKeyDown={handleClientKeyDown}
+                      placeholder="Buscar por Nombre / DNI..."
+                      className="w-full p-3 pl-10 rounded-xl outline-none border-2 transition-all focus:border-blue-500 shadow-inner"
+                      style={{ backgroundColor: theme.bg, borderColor: theme.bg3 }}
+                    />
+                    <FaSearchPlus className="absolute left-3 top-1/2 -translate-y-1/2 opacity-30 group-focus-within:opacity-100 text-blue-500 transition-opacity" />
+                  </div>
+                )}
+              </div>
+
+              {!selectedClient && showClientDropdown && (
+                <div
+                  className="absolute top-full mt-2 w-full max-h-60 overflow-y-auto no-scrollbar rounded-2xl shadow-2xl border-2 z-50 animate-in zoom-in-95 duration-150"
+                  style={{ backgroundColor: theme.bgcards, borderColor: theme.bg3 }}
+                >
+                  <div
+                    className="p-3 cursor-pointer hover:bg-green-500/10 border-b-2 font-black text-green-600 flex items-center justify-between"
+                    style={{
                       borderColor: theme.bg3,
-                      backgroundColor: clientSelectedIndex === (idx + 1) ? "rgba(0,0,0,0.1)" : "transparent"
+                      backgroundColor: clientSelectedIndex === 0 ? "rgba(0,0,0,0.05)" : "transparent"
                     }}
                     onClick={() => {
-                      setSelectedClient(c);
+                      setSelectedClient(null);
+                      setClientSearchText("");
                       setShowClientDropdown(false);
                     }}
                   >
-                    {c.firstName} {c.lastName} {c.dni && `- DNI: ${c.dni}`}
+                    👤 CONSUMIDOR FINAL
+                    {clientSelectedIndex === 0 && <FaCheck size={12} />}
                   </div>
-                ))
-              ) : (
-                <div className="p-2 text-sm opacity-60">No se encontraron clientes...</div>
+                  {filteredClientsSearch.length > 0 ? (
+                    filteredClientsSearch.map((c, idx) => (
+                      <div
+                        key={c.id}
+                        className="p-3 cursor-pointer transition-colors hover:bg-blue-500/10 border-b last:border-0 flex items-center justify-between"
+                        style={{
+                          borderColor: theme.bg3,
+                          backgroundColor: clientSelectedIndex === (idx + 1) ? "rgba(0,0,0,0.05)" : "transparent"
+                        }}
+                        onClick={() => {
+                          setSelectedClient(c);
+                          setShowClientDropdown(false);
+                        }}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-bold text-sm">{c.firstName} {c.lastName}</span>
+                          <span className="text-[10px] opacity-60 italic">DNI: {c.dni || '---'}</span>
+                        </div>
+                        {clientSelectedIndex === (idx + 1) && <FaCheck size={12} className="text-blue-500" />}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-sm opacity-60 italic text-center">No se encontraron clientes...</div>
+                  )}
+                </div>
               )}
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Payment Section */}
-        <div className="flex flex-col gap-2 md:w-72">
-          {/* Label + split toggle */}
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-semibold">Método de Pago</label>
-            <label className="flex items-center gap-1.5 text-xs cursor-pointer select-none" title="Activar pago con múltiples medios">
-              <input
-                type="checkbox"
-                checked={isSplitPayment}
-                onChange={(e) => handleToggleSplit(e.target.checked)}
-                className="accent-blue-500 cursor-pointer"
-              />
-              <span className="opacity-70">Pago combinado</span>
-            </label>
+        <div className="hidden lg:block w-[1px] h-12 bg-current opacity-10 mx-2"></div>
+
+        {/* --- SECCIÓN PAGO (Acordeón en Mobile) --- */}
+        <div className="lg:w-80 flex flex-col">
+          <div
+            onClick={() => window.innerWidth < 1024 && setIsPaymentExpanded(!isPaymentExpanded)}
+            className="flex items-center justify-between p-3 lg:p-0 cursor-pointer lg:cursor-default rounded-lg hover:bg-black/5 lg:hover:bg-transparent"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-amber-500"><FaFileInvoiceDollar size={18} /></span>
+              <span className="text-sm font-bold uppercase tracking-wider opacity-70 lg:hidden">
+                Pago: {isSplitPayment ? 'Combinado' : singleMethod}
+              </span>
+              <span className="hidden lg:inline text-sm font-bold uppercase tracking-wider opacity-70">Método de Pago</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {isSplitPayment && <span className="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded-full font-black lg:hidden">COMBINADO</span>}
+              <span className="lg:hidden opacity-50">
+                {isPaymentExpanded ? <FaChevronUp size={14} /> : <FaChevronDown size={14} />}
+              </span>
+            </div>
           </div>
 
-          {!isSplitPayment ? (
-            /* Simple mode: single selector */
-            <div className="flex flex-col gap-1">
-              <select
-                value={singleMethod}
-                onChange={(e) => handleSingleMethodChange(e.target.value)}
-                className="w-full p-2 rounded outline-none border transition-all"
-                style={{ 
-                  backgroundColor: theme.bg, 
-                  color: theme.text,
-                  borderColor: singleMethod === "Cuenta Corriente" ? "#f97316" : "transparent"
-                }}
-              >
-                <option value="Efectivo">Efectivo</option>
-                <option value="Tarjeta">Tarjeta</option>
-                <option value="Transferencia">Transferencia</option>
-                <option value="Cuenta Corriente">Cuenta Corriente</option>
-              </select>
-              {singleMethod === "Cuenta Corriente" && (
-                <span className="text-[10px] text-orange-500 font-bold uppercase flex items-center gap-1 px-1">
-                   ⚠️ Generando deuda al cliente
-                </span>
-              )}
+          <div className={`${isPaymentExpanded ? 'block' : 'hidden lg:block'} mt-2 lg:mt-1 animate-in fade-in slide-in-from-top-2 duration-200`}>
+            {/* Label + split toggle */}
+            <div className="flex items-center justify-between mb-1">
+              <span className="hidden lg:inline text-[10px] font-black opacity-40 uppercase tracking-tighter">Opciones de cobro</span>
+              <label className="flex items-center gap-1.5 text-[10px] font-bold cursor-pointer select-none bg-blue-500/10 px-2 py-1 rounded-lg text-blue-600 active:scale-95 transition-transform" title="Activar pago con múltiples medios">
+                <input
+                  type="checkbox"
+                  checked={isSplitPayment}
+                  onChange={(e) => handleToggleSplit(e.target.checked)}
+                  className="accent-blue-500 cursor-pointer"
+                />
+                <span className="uppercase">Pago combinado</span>
+              </label>
             </div>
-          ) : (
-            /* Split mode: full multi-payment panel */
-            <>
-              {/* Existing payments */}
-              {paymentBreakdown.map((p, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between px-3 py-1.5 rounded text-sm font-medium"
-                  style={{ backgroundColor: theme.bg3, border: `1px solid ${theme.border}` }}
-                >
-                  <span style={{ color: theme.colortitlecard }}>{p.method}</span>
-                  <div className="flex items-center gap-1">
-                    <span className="opacity-50 text-[10px]">$</span>
-                    <input
-                      type="number"
-                      value={p.amount}
-                      step="0.01"
-                      className="w-16 bg-transparent font-bold outline-none border-b border-transparent focus:border-blue-500 text-right"
-                      onChange={(e) => updatePayment(i, p.method, parseFloat(e.target.value) || 0)}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removePayment(i)}
-                    className="ml-2 opacity-60 hover:opacity-100 transition-opacity"
-                    style={{ color: theme.danger }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
 
-              {/* Remaining badge */}
-              {cart.length > 0 && (
-                <div
-                  className={`text-xs px-2 py-1 rounded font-semibold ${!isFullyCoveredActive ? 'cursor-pointer hover:opacity-80 active:scale-95 transition-all' : ''}`}
-                  title={!isFullyCoveredActive ? "Completar con el saldo restante" : ""}
-                  onClick={() => !isFullyCoveredActive && setNewPaymentAmount(remaining.toFixed(2))}
+            {!isSplitPayment ? (
+              <div className="flex flex-col gap-1">
+                <select
+                  value={singleMethod}
+                  onChange={(e) => handleSingleMethodChange(e.target.value)}
+                  className="w-full p-3 rounded-xl outline-none border-2 font-bold transition-all shadow-sm focus:border-blue-500"
                   style={{
-                    backgroundColor: isFullyCoveredActive ? theme.successBg : theme.dangerBg,
-                    color: isFullyCoveredActive ? theme.successText : theme.dangerText
+                    backgroundColor: theme.bg,
+                    color: theme.text,
+                    borderColor: singleMethod === "Cuenta Corriente" ? "#f97316" : theme.bg3
                   }}
                 >
-                  {isFullyCoveredActive
-                    ? "✓ Total cubierto"
-                    : `Restante: ${formatCurrency(remaining)} (Clic para completar)`
-                  }
+                  <option value="Efectivo">💵 Efectivo</option>
+                  <option value="Tarjeta">💳 Tarjeta</option>
+                  <option value="Transferencia">🏦 Transferencia</option>
+                  <option value="Cuenta Corriente">📒 Cuenta Corriente</option>
+                </select>
+                {singleMethod === "Cuenta Corriente" && (
+                  <span className="text-[10px] text-orange-500 font-black uppercase flex items-center gap-1 px-1 mt-1 animate-pulse">
+                    ⚠️ Generando deuda al cliente
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {/* Existing payments */}
+                <div className="flex flex-col gap-1.5 max-h-32 overflow-y-auto no-scrollbar">
+                  {paymentBreakdown.map((p, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold shadow-sm animate-in slide-in-from-left-2 duration-150"
+                      style={{ backgroundColor: theme.bg3, border: `1px solid ${theme.border}` }}
+                    >
+                      <span className="opacity-80">{p.method}</span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={p.amount}
+                          step="0.01"
+                          className="w-20 bg-black/5 dark:bg-white/5 rounded px-2 py-0.5 font-mono text-right outline-none focus:ring-1 ring-blue-500"
+                          onChange={(e) => updatePayment(i, p.method, parseFloat(e.target.value) || 0)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removePayment(i)}
+                          className="p-1 rounded-full hover:bg-red-500/10 transition-colors"
+                          style={{ color: theme.danger }}
+                        >
+                          <RiCloseLine size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              )}
 
-              {/* Botón rápido para CC si hay saldo y cliente con cuenta */}
-              {!isFullyCoveredActive && selectedClient?.currentAccount?.status === "OPEN" && remaining > 0 && (
-                <button
-                  type="button"
-                  onClick={() => addPayment("Cuenta Corriente", parseFloat(remaining.toFixed(2)))}
-                  className="w-full mt-1 py-1.5 rounded text-[10px] font-black uppercase transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-1 border-2 border-dashed shadow-sm"
-                  style={{ 
-                    borderColor: "#f97316", 
-                    color: "#f97316",
-                    backgroundColor: "#f9731610"
-                  }}
-                >
-                  <FaFileInvoiceDollar size={12} /> Cargar restante en C.C.
-                </button>
-              )}
-
-              {/* Add new payment row */}
-              {!isFullyCoveredActive && cart.length > 0 && (
-                <div className="flex gap-1 mt-1 items-center">
-                  <select
-                    value={newPaymentMethod}
-                    onChange={(e) => setNewPaymentMethod(e.target.value)}
-                    className="p-1.5 rounded outline-none text-sm flex-shrink-0"
-                    style={{ backgroundColor: theme.bg, color: theme.text }}
+                {/* Remaining badge */}
+                {cart.length > 0 && (
+                  <div
+                    className={`text-[10px] px-3 py-1.5 rounded-lg font-black uppercase text-center transition-all ${!isFullyCoveredActive ? 'cursor-pointer hover:opacity-80 active:scale-95 border-2 border-dashed' : ''}`}
+                    onClick={() => !isFullyCoveredActive && setNewPaymentAmount(remaining.toFixed(2))}
+                    style={{
+                      backgroundColor: isFullyCoveredActive ? theme.successBg : theme.dangerBg,
+                      color: isFullyCoveredActive ? theme.successText : theme.dangerText,
+                      borderColor: isFullyCoveredActive ? 'transparent' : theme.danger
+                    }}
                   >
-                    <option value="Efectivo">Efectivo</option>
-                    <option value="Tarjeta">Tarjeta</option>
-                    <option value="Transferencia">Transferencia</option>
-                    <option value="Cuenta Corriente">Cuenta Corriente</option>
-                  </select>
-                  <div className="flex-1 relative flex items-center">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={newPaymentAmount}
-                      onChange={(e) => setNewPaymentAmount(e.target.value)}
-                      onKeyDown={handleAddPaymentKey}
-                      placeholder={formatCurrency(remaining)}
-                      className="w-full p-1.5 pr-8 rounded outline-none text-sm"
-                      style={{ backgroundColor: theme.bg, color: theme.text }}
-                    />
-                    {remaining > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setNewPaymentAmount(remaining.toFixed(2))}
-                        title="Completar con saldo restante"
-                        className="absolute right-1.5 p-1 rounded hover:bg-black/10 transition-colors"
-                        style={{ color: theme.primary }}
-                      >
-                        <FaMagic size={12} />
-                      </button>
-                    )}
+                    {isFullyCoveredActive
+                      ? "✓ Total cubierto"
+                      : `Faltan: ${formatCurrency(remaining)} (Completar)`
+                    }
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleAddPayment}
-                    className="px-2 py-1.5 rounded text-sm font-bold transition-opacity hover:opacity-80 flex-shrink-0 flex items-center justify-center"
-                    style={{ backgroundColor: theme.primary, color: "white" }}
-                    title="Confirmar medio de pago"
-                  >
-                    <FaCheck size={14} />
-                  </button>
-                </div>
-              )}
-            </>
-          )}
+                )}
+
+                {/* Add new payment row */}
+                {!isFullyCoveredActive && cart.length > 0 && (
+                  <div className="flex gap-1.5 mt-1 items-center">
+                    <select
+                      value={newPaymentMethod}
+                      onChange={(e) => setNewPaymentMethod(e.target.value)}
+                      className="p-2 rounded-xl outline-none text-[10px] font-bold flex-shrink-0 border shadow-sm"
+                      style={{ backgroundColor: theme.bg, color: theme.text, borderColor: theme.bg3 }}
+                    >
+                      <option value="Efectivo">EFE</option>
+                      <option value="Tarjeta">TAR</option>
+                      <option value="Transferencia">TRA</option>
+                      <option value="Cuenta Corriente">C.C.</option>
+                    </select>
+                    <div className="flex-1 relative flex items-center">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={newPaymentAmount}
+                        onChange={(e) => setNewPaymentAmount(e.target.value)}
+                        onKeyDown={handleAddPaymentKey}
+                        placeholder={formatCurrency(remaining)}
+                        className="w-full p-2 pr-8 rounded-xl outline-none text-xs font-mono border-2 focus:border-blue-500"
+                        style={{ backgroundColor: theme.bg, color: theme.text, borderColor: theme.bg3 }}
+                      />
+                      {remaining > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setNewPaymentAmount(remaining.toFixed(2))}
+                          className="absolute right-1 p-1 text-blue-500"
+                        >
+                          <FaMagic size={10} />
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddPayment}
+                      className="p-2 rounded-xl text-white shadow-lg active:scale-90 transition-transform"
+                      style={{ backgroundColor: theme.primary }}
+                    >
+                      <FaCheck size={12} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-12 gap-4 flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-col md:grid md:grid-cols-12 gap-4 flex-1 min-h-0 overflow-hidden px-4 md:px-0">
 
         {/* PRODUCTOS */}
-        <div className="col-span-7 rounded-lg p-4 flex flex-col relative overflow-hidden"
+        <div className="flex-1 md:col-span-7 rounded-lg p-4 flex flex-col relative overflow-hidden min-h-[400px] md:min-h-0"
           style={{ backgroundColor: theme.bgcards, boxShadow: v.boxshadowGray }}>
 
           {showScrollUpProds && (
@@ -842,7 +880,7 @@ const NewSale = () => {
         </div> {/* Closes col-span-7 product wrapper */}
 
         {/* CARRITO */}
-        <div className="col-span-5 rounded-lg p-4 flex flex-col relative overflow-hidden"
+        <div className="w-full md:col-span-5 rounded-lg p-4 flex flex-col relative overflow-hidden shrink-0 min-h-[300px] md:min-h-0"
           style={{ backgroundColor: theme.bgcards, boxShadow: v.boxshadowGray }}>
 
           {showScrollUpCart && (
@@ -857,7 +895,7 @@ const NewSale = () => {
 
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xl font-semibold">Carrito</h2>
-            <button 
+            <button
               type="button"
               onClick={() => setIsCartModalOpen(true)}
               className="p-1.5 rounded-full hover:bg-black/10 transition-colors"
@@ -955,6 +993,37 @@ const NewSale = () => {
 
       </div>
 
+      {/* STICKY FOOTER MOBILE (Solo visible en móviles) */}
+      <div className="md:hidden sticky bottom-0 left-0 right-0 p-4 shadow-[0_-4px_10px_rgba(0,0,0,0.1)] flex items-center justify-between z-30 shrink-0"
+        style={{ backgroundColor: theme.bgcards, borderTop: `1px solid ${theme.bg3}` }}>
+        <div className="flex flex-col">
+          <span className="text-[10px] opacity-60 uppercase font-black">Total</span>
+          <span className="text-xl font-black" style={{ color: theme.success }}>{formatCurrency(netTotal)}</span>
+        </div>
+        <div className="flex gap-2 relative">
+          <button
+            onClick={() => setIsCartModalOpen(true)}
+            className="p-3 rounded-xl relative transition-transform active:scale-90"
+            style={{ backgroundColor: `${theme.primary}20`, color: theme.primary }}
+          >
+            <FaShoppingCart size={22} />
+            {cart.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full border-2 font-bold" style={{ borderColor: theme.bgcards }}>
+                {cart.reduce((acc, item) => acc + item.quantity, 0)}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={handleOpenDiscountModal}
+            disabled={!cart.length || !isFullyCoveredActive}
+            className="px-6 py-3 rounded-xl font-black text-white shadow-lg disabled:opacity-50 transition-all active:scale-95 uppercase text-sm tracking-wider"
+            style={{ backgroundColor: theme.success }}
+          >
+            Cobrar
+          </button>
+        </div>
+      </div>
+
       <ConfirmModal
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
@@ -992,8 +1061,8 @@ const NewSale = () => {
         )}
       </ConfirmModal>
 
-      <Modal 
-        isOpen={isCartModalOpen} 
+      <Modal
+        isOpen={isCartModalOpen}
         onClose={() => setIsCartModalOpen(false)}
         maxWidth="max-w-4xl"
       >
@@ -1063,17 +1132,17 @@ const NewSale = () => {
                         style={{ backgroundColor: theme.bg, borderColor: theme.bg3 }}>
                         <span className="opacity-70">{p.method}</span>
                         <div className="flex items-center gap-2">
-                           <div className="flex items-center gap-1">
-                             <span className="opacity-50 text-[10px]">$</span>
-                             <input
-                               type="number"
-                               value={p.amount}
-                               step="0.01"
-                               className="w-20 bg-transparent font-bold outline-none border-b border-transparent focus:border-blue-500 text-right"
-                               onChange={(e) => updatePayment(i, p.method, parseFloat(e.target.value) || 0)}
-                             />
-                           </div>
-                           <button type="button" onClick={() => removePayment(i)} className="p-1 hover:bg-black/5 rounded transition-colors" style={{ color: theme.danger }}>✕</button>
+                          <div className="flex items-center gap-1">
+                            <span className="opacity-50 text-[10px]">$</span>
+                            <input
+                              type="number"
+                              value={p.amount}
+                              step="0.01"
+                              className="w-20 bg-transparent font-bold outline-none border-b border-transparent focus:border-blue-500 text-right"
+                              onChange={(e) => updatePayment(i, p.method, parseFloat(e.target.value) || 0)}
+                            />
+                          </div>
+                          <button type="button" onClick={() => removePayment(i)} className="p-1 hover:bg-black/5 rounded transition-colors" style={{ color: theme.danger }}>✕</button>
                         </div>
                       </div>
                     ))}
@@ -1122,32 +1191,32 @@ const NewSale = () => {
               {/* Replica de la calculadora de vuelto */}
               {showCashCalculator && (
                 <div className="p-4 rounded-lg border border-dashed mt-2" style={{ borderColor: `${theme.primary}60`, backgroundColor: theme.bg }}>
-                   <div className="flex flex-col gap-3">
-                      <div className="flex items-center gap-2">
-                        <label className="text-sm font-bold">Paga con:</label>
-                        <input 
-                          type="number"
-                          value={customerPayment}
-                          onChange={(e) => setCustomerPayment(e.target.value)}
-                          className="flex-1 p-2 rounded outline-none text-right font-bold text-lg"
-                          style={{ backgroundColor: theme.bg3, color: theme.text }}
-                        />
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-bold">Paga con:</label>
+                      <input
+                        type="number"
+                        value={customerPayment}
+                        onChange={(e) => setCustomerPayment(e.target.value)}
+                        className="flex-1 p-2 rounded outline-none text-right font-bold text-lg"
+                        style={{ backgroundColor: theme.bg3, color: theme.text }}
+                      />
+                    </div>
+                    {customerPayment !== "" && parseFloat(customerPayment) !== cashAmountInSale && (
+                      <div className="flex items-center justify-between">
+                        <span className={`font-bold ${parseFloat(customerPayment) > cashAmountInSale ? "text-green-500" : "text-red-500"}`}>
+                          {parseFloat(customerPayment) > cashAmountInSale ? "Vuelto:" : "Faltan:"}
+                        </span>
+                        <span className={`text-2xl font-black ${parseFloat(customerPayment) > cashAmountInSale ? "text-green-500" : "text-red-500"}`}>
+                          {formatCurrency(Math.abs(parseFloat(customerPayment) - cashAmountInSale))}
+                        </span>
                       </div>
-                      {customerPayment !== "" && parseFloat(customerPayment) !== cashAmountInSale && (
-                        <div className="flex items-center justify-between">
-                          <span className={`font-bold ${parseFloat(customerPayment) > cashAmountInSale ? "text-green-500" : "text-red-500"}`}>
-                            {parseFloat(customerPayment) > cashAmountInSale ? "Vuelto:" : "Faltan:"}
-                          </span>
-                          <span className={`text-2xl font-black ${parseFloat(customerPayment) > cashAmountInSale ? "text-green-500" : "text-red-500"}`}>
-                            {formatCurrency(Math.abs(parseFloat(customerPayment) - cashAmountInSale))}
-                          </span>
-                        </div>
-                      )}
-                   </div>
+                    )}
+                  </div>
                 </div>
               )}
 
-              <button 
+              <button
                 onClick={() => { setIsCartModalOpen(false); setIsConfirmOpen(true); }}
                 className="w-full py-4 rounded-xl font-bold text-lg shadow-lg hover:scale-[1.01] active:scale-95 transition-all mt-auto"
                 style={{ backgroundColor: theme.primary, color: "white" }}

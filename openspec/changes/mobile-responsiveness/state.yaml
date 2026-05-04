@@ -1,0 +1,14 @@
+name: mobile-responsiveness
+status: proposed
+current_phase: propose
+phases:
+  explore: completed
+  propose: completed
+  spec: completed
+  design: completed
+  tasks: completed
+  apply: completed
+  verify: pending
+  archive: pending
+artifacts:
+  proposal: openspec/changes/mobile-responsiveness/proposal.md

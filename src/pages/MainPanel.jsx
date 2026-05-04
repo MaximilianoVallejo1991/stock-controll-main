@@ -30,27 +30,25 @@ const MainPanel = () => {
   const filteredSections = sections.filter(s => s.roles.includes(effectiveRole));
 
   return (
-    <main className="flex" style={{ backgroundColor: theme.bg }}>
-      <div
-        className="min-h-screen w-full p-8 flex justify-center items-center flex-col gap-6"
-        style={{ backgroundColor: theme.bg, color: theme.text }}
-      >
-        <div className="w-full flex justify-between items-center max-w-4xl">
-          <h1 className="text-3xl font-bold">Panel principal</h1>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-5xl h-2/5">
-          {filteredSections.map((section) => (
-            <SectionCard
-              key={section.route}
-              label={section.label}
-              icon={section.icon}
-              route={section.route}
-            />
-          ))}
-        </div>
+    <div
+      className="w-full min-h-full p-4 md:p-8 flex flex-col items-center justify-start md:justify-center gap-6"
+      style={{ backgroundColor: theme.bg, color: theme.text }}
+    >
+      <div className="w-full flex justify-between items-center max-w-5xl">
+        <h1 className="text-2xl md:text-3xl font-bold">Panel principal</h1>
       </div>
-    </main>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 w-full max-w-5xl">
+        {filteredSections.map((section) => (
+          <SectionCard
+            key={section.route}
+            label={section.label}
+            icon={section.icon}
+            route={section.route}
+          />
+        ))}
+      </div>
+    </div>
   );
 };
 

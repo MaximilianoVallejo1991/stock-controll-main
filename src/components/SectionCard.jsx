@@ -19,7 +19,7 @@ const SectionCard = ({ label, icon: Icon, route }) => {
           hover:scale-105 hover:contrast-125
           transition
           group
-          w-auto max-w-xs p-6
+          w-full md:max-w-xs p-4 md:p-6 min-h-[140px]
         "
 
       style={{ backgroundColor: hovered ? theme.bg5 : theme.bg2, color: theme.text }}

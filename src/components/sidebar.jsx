@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "../context/ThemeContext";
 import { FaBars } from "react-icons/fa";
+import { RiCloseLine } from "react-icons/ri";
 import ThemedButton from "./ThemedButton";
 import ThemeToggle from "./ThemeToggle";
 import useUserStore from "../store/userStore";
@@ -10,7 +11,7 @@ import axios from "axios";
 import ImagePreviewModal from "./Modals/ImagePreviewModal";
 import { ROLES } from "../constants/roles";
 
-const Sidebar = ({ menuItems = [], onLogout }) => {
+const Sidebar = ({ menuItems = [], onLogout, isMobileOpen, onCloseMobile }) => {
   const { theme } = useTheme();
   const [isOpen, setIsOpen] = useState(true);
   const [stores, setStores] = useState([]);
@@ -86,18 +87,33 @@ const Sidebar = ({ menuItems = [], onLogout }) => {
   };
 
   return (
-    <aside
-      className={`h-full transition-all duration-300 flex flex-col justify-between shrink-0 no-print ${isOpen ? "w-64" : "w-20"
-        }`}
-      style={{ backgroundColor: theme.bg2, color: theme.text }}
-    >
+    <>
+      {/* Backdrop (fondo oscuro) solo visible en móviles cuando el menú está abierto */}
+      {isMobileOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-40 md:hidden transition-opacity duration-300"
+          onClick={onCloseMobile}
+        />
+      )}
+
+      <aside
+        className={`
+          h-full transition-all duration-300 flex flex-col justify-between shrink-0 no-print 
+          fixed md:relative z-50 md:z-auto top-0 left-0
+          ${isMobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full md:translate-x-0 md:shadow-none"}
+          ${isOpen ? "w-64" : "w-20"}
+        `}
+        style={{ backgroundColor: theme.bg2, color: theme.text }}
+      >
       {/* Header Wrapper */}
       <div className="flex flex-col flex-1 overflow-hidden">
         <div className={`flex items-center p-4 shrink-0 ${isOpen ? "justify-between" : "flex-col justify-center gap-6"}`}>
           {isOpen ? (
-            <ThemedButton onClick={() => Navigate(-1)}>
-              ⬅ Atrás
-            </ThemedButton>
+            <div className="flex items-center gap-2">
+              <ThemedButton onClick={() => Navigate(-1)}>
+                ⬅ <span className="hidden md:inline">Atrás</span>
+              </ThemedButton>
+            </div>
           ) : (
             <button
               onClick={() => Navigate(-1)}
@@ -107,7 +123,21 @@ const Sidebar = ({ menuItems = [], onLogout }) => {
               ⬅
             </button>
           )}
-          <button onClick={() => setIsOpen(!isOpen)}>
+
+          {/* Botón de cierre para MOBILE (X) */}
+          <button 
+            onClick={onCloseMobile} 
+            className="md:hidden p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+            style={{ color: theme.text }}
+          >
+            <RiCloseLine size={28} />
+          </button>
+
+          {/* Botón de colapso para DESKTOP (Hamburguesa) */}
+          <button 
+            onClick={() => setIsOpen(!isOpen)} 
+            className="hidden md:block p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+          >
             <FaBars size={20} />
           </button>
         </div>
@@ -177,14 +207,24 @@ const Sidebar = ({ menuItems = [], onLogout }) => {
         </div>
 
         {/* Menú */}
-        <nav className="px-4 py-4 flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar">
+        <nav className="px-4 py-4 flex flex-col gap-1 flex-1 overflow-y-auto custom-scrollbar">
           {menuItems.map((item, index) => (
             <button
               key={index}
               onClick={item.onClick}
-              className="text-left hover:underline shrink-0"
+              className={`
+                text-left shrink-0 rounded-xl transition-all duration-200
+                flex items-center gap-3
+                ${isOpen ? "px-4 py-3.5 text-base md:text-sm font-medium" : "p-3 justify-center"}
+                hover:bg-black/5 dark:hover:bg-white/5 active:scale-95
+              `}
             >
-              {isOpen ? item.label : item.icon}
+              {!isOpen ? item.icon : (
+                <>
+                  <span className="text-xl md:text-lg opacity-80">{item.icon}</span>
+                  <span>{item.label}</span>
+                </>
+              )}
             </button>
           ))}
         </nav>
@@ -205,7 +245,9 @@ const Sidebar = ({ menuItems = [], onLogout }) => {
           Cerrar sesión
         </ThemedButton>
       </div>
-      {/* Modal de Previsualización */}
+      </aside>
+      
+      {/* Modal de Previsualización - MOVIDO AFUERA DEL ASIDE PARA QUE SEA FULL SCREEN */}
       {isPreviewOpen && (
         <ImagePreviewModal
           isOpen={isPreviewOpen}
@@ -217,7 +259,7 @@ const Sidebar = ({ menuItems = [], onLogout }) => {
           onImageSetMain={handleImageSetMain}
         />
       )}
-    </aside>
+    </>
   );
 };
 

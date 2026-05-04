@@ -15,6 +15,7 @@ const CashRegister = ({ onGoToPOS }) => {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [isCajaExpanded, setIsCajaExpanded] = useState(false);
+    const [activeTab, setActiveTab] = useState("gestion"); // NEW: mobile tab state
 
     // Movement Detail Modal State
     const [selectedMovement, setSelectedMovement] = useState(null);
@@ -239,7 +240,27 @@ const CashRegister = ({ onGoToPOS }) => {
     if (loading) return <div className="p-8 italic opacity-60">Sincronizando caja con la central...</div>;
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-2 pb-6 h-full relative">
+        <div className="flex flex-col h-full overflow-hidden relative p-2 pb-6">
+            
+            {/* MOBILE TABS SELECTOR */}
+            <div className="flex lg:hidden mb-4 p-1 rounded-xl bg-black/5 dark:bg-white/5 shrink-0">
+                <button 
+                    onClick={() => setActiveTab("gestion")}
+                    className={`flex-1 py-2.5 rounded-lg font-bold text-sm transition-all ${activeTab === 'gestion' ? 'shadow-md scale-[1.02]' : 'opacity-50'}`}
+                    style={{ backgroundColor: activeTab === 'gestion' ? theme.bgcards : 'transparent', color: theme.text }}
+                >
+                    💼 Gestión
+                </button>
+                <button 
+                    onClick={() => setActiveTab("actividad")}
+                    className={`flex-1 py-2.5 rounded-lg font-bold text-sm transition-all ${activeTab === 'actividad' ? 'shadow-md scale-[1.02]' : 'opacity-50'}`}
+                    style={{ backgroundColor: activeTab === 'actividad' ? theme.bgcards : 'transparent', color: theme.text }}
+                >
+                    📜 Actividad
+                </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0 relative">
 
             {/* OPEN REGISTER MODAL */}
             {showOpenConfirm && (
@@ -310,7 +331,7 @@ const CashRegister = ({ onGoToPOS }) => {
             </ConfirmModal>
 
             {/* LEFT COLUMN: Open/Close & Controls */}
-            <div className="h-full flex flex-col relative overflow-hidden pr-2">
+            <div className={`h-full flex flex-col relative overflow-hidden pr-2 ${activeTab !== 'gestion' ? 'hidden lg:flex' : 'flex'}`}>
                 {showScrollUpLeft && (
                     <button
                         onClick={() => scrollToExtreme(leftColRef, false)}
@@ -470,7 +491,7 @@ const CashRegister = ({ onGoToPOS }) => {
             </div> {/* Closes left main container (295) */}
 
             {/* RIGHT COLUMN: History Timeline */}
-            <div className="p-6 rounded-xl flex flex-col h-full overflow-hidden relative" style={{ backgroundColor: theme.bgcards, boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)" }}>
+            <div className={`p-6 rounded-xl flex flex-col h-full overflow-hidden relative ${activeTab !== 'actividad' ? 'hidden lg:flex' : 'flex'}`} style={{ backgroundColor: theme.bgcards, boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)" }}>
                 <h3 className="text-xl font-bold mb-4 border-b pb-2 flex justify-between items-center shrink-0" style={{ borderColor: theme.bg3 }}>
                     Actividad del Turno Actual
                     <span className="text-xs px-2 py-1 rounded font-normal" style={{ backgroundColor: theme.infoBg, color: theme.infoText }}>Historial Combinado</span>
@@ -528,20 +549,20 @@ const CashRegister = ({ onGoToPOS }) => {
                                             style={{ borderColor: theme.bg3 }}
                                             title="Ver detalle completo"
                                         >
-                                            <div className="flex flex-col text-sm max-w-[75%]">
-                                                <div className="flex gap-2 items-center">
-                                                    <span className="font-bold px-1.5 py-0.5 text-[10px] rounded border border-current whitespace-nowrap" style={{ color: color, backgroundColor: bgColor }}>
+                                            <div className="flex flex-col text-sm max-w-[65%] md:max-w-[75%]">
+                                                <div className="flex gap-2 items-center flex-wrap">
+                                                    <span className="font-bold px-1.5 py-0.5 text-[9px] md:text-[10px] rounded border border-current whitespace-nowrap" style={{ color: color, backgroundColor: bgColor }}>
                                                         {label}
                                                     </span>
-                                                    <span className="font-mono text-base font-semibold" style={{ color: isIncome ? theme.success : theme.danger }}>
+                                                    <span className="font-mono text-sm md:text-base font-semibold shrink-0" style={{ color: isIncome ? theme.success : theme.danger }}>
                                                         {isIncome ? '+' : '-'}{formatCurrency(isOrder ? item.amount : item.amount)}
                                                     </span>
                                                 </div>
-                                                <p className="opacity-70 mt-1 truncate" title={desc}>{desc}</p>
+                                                <p className="opacity-70 mt-1 truncate text-xs md:text-sm" title={desc}>{desc}</p>
                                             </div>
-                                            <div className="flex flex-col items-end text-xs opacity-60 ml-2 border-l pl-2 min-w-[80px]" style={{ borderColor: theme.bg3 }}>
+                                            <div className="flex flex-col items-end text-[10px] md:text-xs opacity-60 ml-2 border-l pl-2 min-w-[70px] md:min-w-[80px]" style={{ borderColor: theme.bg3 }}>
                                                 <span className="font-semibold">{new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                <span className="truncate max-w-28 text-right" title={item.user?.firstName}>{item.user?.firstName || 'Cajero'}</span>
+                                                <span className="truncate max-w-[60px] md:max-w-28 text-right" title={item.user?.firstName}>{item.user?.firstName || 'Cajero'}</span>
                                             </div>
                                         </div>
                                     )
@@ -586,7 +607,7 @@ const CashRegister = ({ onGoToPOS }) => {
 
             {/* REAL-TIME TOTALS FOOTER */}
             {currentRegister && (
-                <div className="absolute bottom-6 right-6 left-6 lg:left-auto lg:w-[calc(50%-1.5rem)] bg-white dark:bg-gray-800 p-3 rounded-lg border shadow-lg z-10 grid grid-cols-3 gap-2" style={{ borderColor: theme.bg3, backgroundColor: theme.bgcards }}>
+                <div className="fixed lg:absolute bottom-4 left-4 right-4 lg:bottom-6 lg:right-6 lg:left-auto lg:w-[calc(50%-1.5rem)] p-3 rounded-xl border shadow-2xl z-40 grid grid-cols-3 gap-2 animate-in slide-in-from-bottom-4 duration-300" style={{ borderColor: theme.bg3, backgroundColor: theme.bgcards }}>
 
                     {(() => {
                         let fisico = currentRegister.openingAmount;
@@ -609,16 +630,16 @@ const CashRegister = ({ onGoToPOS }) => {
                         return (
                             <>
                                 <div className="flex flex-col items-center justify-center border-r" style={{ borderColor: theme.bg3 }}>
-                                    <span className="text-[10px] font-bold opacity-60 uppercase mb-1 flex items-center gap-1 text-green-500">💵 Efectivo</span>
-                                    <span className="font-mono font-bold text-sm lg:text-base">{formatCurrency(fisico)}</span>
+                                    <span className="text-[9px] md:text-[10px] font-bold opacity-60 uppercase mb-0.5 md:mb-1 flex items-center gap-1 text-green-500 shrink-0">💵 <span className="hidden xs:inline">Efectivo</span></span>
+                                    <span className="font-mono font-bold text-xs md:text-base">{formatCurrency(fisico)}</span>
                                 </div>
                                 <div className="flex flex-col items-center justify-center border-r" style={{ borderColor: theme.bg3 }}>
-                                    <span className="text-[10px] font-bold opacity-60 uppercase mb-1 flex items-center gap-1 text-blue-500">🏦 Transf.</span>
-                                    <span className="font-mono font-bold text-sm lg:text-base">{formatCurrency(transferencias)}</span>
+                                    <span className="text-[9px] md:text-[10px] font-bold opacity-60 uppercase mb-0.5 md:mb-1 flex items-center gap-1 text-blue-500 shrink-0">🏦 <span className="hidden xs:inline">Transf.</span></span>
+                                    <span className="font-mono font-bold text-xs md:text-base">{formatCurrency(transferencias)}</span>
                                 </div>
                                 <div className="flex flex-col items-center justify-center">
-                                    <span className="text-[10px] font-bold opacity-60 uppercase mb-1 flex items-center gap-1 text-orange-500">💳 Tarjeta</span>
-                                    <span className="font-mono font-bold text-sm lg:text-base">{formatCurrency(tarjetas)}</span>
+                                    <span className="text-[9px] md:text-[10px] font-bold opacity-60 uppercase mb-0.5 md:mb-1 flex items-center gap-1 text-orange-500 shrink-0">💳 <span className="hidden xs:inline">Tarjeta</span></span>
+                                    <span className="font-mono font-bold text-xs md:text-base">{formatCurrency(tarjetas)}</span>
                                 </div>
                             </>
                         );
@@ -668,8 +689,9 @@ const CashRegister = ({ onGoToPOS }) => {
                     </div>
                 </div>
             )}
-
+            </div>
         </div>
-    )
+    );
 };
+
 export default CashRegister;
