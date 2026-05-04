@@ -1,0 +1,17 @@
+{
+  "name": "Stock Control POS",
+  "short_name": "StockPOS",
+  "description": "Sistema de Control de Stock y Punto de Venta",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

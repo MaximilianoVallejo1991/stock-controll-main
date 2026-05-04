@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useTheme } from "../context/ThemeContext";
 import { FaBars } from "react-icons/fa";
 import { RiCloseLine } from "react-icons/ri";
+import { MdOutlineInstallDesktop } from "react-icons/md"; // Nuevo icono
 import ThemedButton from "./ThemedButton";
 import ThemeToggle from "./ThemeToggle";
 import useUserStore from "../store/userStore";
@@ -14,6 +15,8 @@ import { ROLES } from "../constants/roles";
 const Sidebar = ({ menuItems = [], onLogout, isMobileOpen, onCloseMobile }) => {
   const { theme } = useTheme();
   const [isOpen, setIsOpen] = useState(true);
+  const [showAdminSettings, setShowAdminSettings] = useState(false); // Nuevo estado para mobile
+  const [canInstall, setCanInstall] = useState(!!window.deferredPrompt); // Estado para el botón de PWA
   const [stores, setStores] = useState([]);
 
   const user = useUserStore((state) => state.user);
@@ -29,12 +32,34 @@ const Sidebar = ({ menuItems = [], onLogout, isMobileOpen, onCloseMobile }) => {
   const [userImages, setUserImages] = useState([]);
 
   useEffect(() => {
+    // Escuchar el evento personalizado de PWA
+    const handlePwaReady = () => setCanInstall(true);
+    window.addEventListener('pwa-install-ready', handlePwaReady);
+
     if (user?.role === ROLES.SISTEMA) {
       axios.get("/api/stores")
         .then(res => setStores(res.data))
         .catch(err => console.error("Error cargando tiendas en sidebar", err));
     }
+
+    return () => window.removeEventListener('pwa-install-ready', handlePwaReady);
   }, [user]);
+
+  const handleInstallClick = async () => {
+    const promptEvent = window.deferredPrompt;
+    if (!promptEvent) return;
+
+    // Mostrar el prompt nativo
+    promptEvent.prompt();
+
+    // Esperar la respuesta del usuario
+    const { outcome } = await promptEvent.userChoice;
+    console.log(`User response to install prompt: ${outcome}`);
+
+    // Limpiar el evento guardado
+    window.deferredPrompt = null;
+    setCanInstall(false);
+  };
 
   const handleStoreChange = (e) => {
     const newStoreId = e.target.value === "ALL" ? null : e.target.value;
@@ -124,22 +149,48 @@ const Sidebar = ({ menuItems = [], onLogout, isMobileOpen, onCloseMobile }) => {
             </button>
           )}
 
-          {/* Botón de cierre para MOBILE (X) */}
-          <button 
-            onClick={onCloseMobile} 
-            className="md:hidden p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-            style={{ color: theme.text }}
-          >
-            <RiCloseLine size={28} />
-          </button>
-
           {/* Botón de colapso para DESKTOP (Hamburguesa) */}
-          <button 
-            onClick={() => setIsOpen(!isOpen)} 
-            className="hidden md:block p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-          >
-            <FaBars size={20} />
-          </button>
+          <div className="hidden md:flex items-center gap-2">
+            {/* Icono de Instalación PWA (Versión pequeña) - AHORA AQUÍ ARRIBA */}
+            {canInstall && (
+              <button
+                onClick={handleInstallClick}
+                title="Instalar como aplicación de escritorio"
+                className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-all active:scale-90"
+                style={{ color: theme.text }}
+              >
+                <MdOutlineInstallDesktop size={20} />
+              </button>
+            )}
+            
+            <button 
+              onClick={() => setIsOpen(!isOpen)} 
+              className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+            >
+              <FaBars size={20} />
+            </button>
+          </div>
+
+          {/* Versión Mobile: Solo el icono de instalación si no está el sidebar abierto? No, mejor siempre disponible */}
+          <div className="md:hidden flex items-center gap-2">
+             {canInstall && (
+              <button
+                onClick={handleInstallClick}
+                title="Instalar App"
+                className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10"
+                style={{ color: theme.text }}
+              >
+                <MdOutlineInstallDesktop size={24} />
+              </button>
+            )}
+            <button 
+              onClick={onCloseMobile} 
+              className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+              style={{ color: theme.text }}
+            >
+              <RiCloseLine size={28} />
+            </button>
+          </div>
         </div>
 
 
@@ -159,47 +210,67 @@ const Sidebar = ({ menuItems = [], onLogout, isMobileOpen, onCloseMobile }) => {
               <p className="text-sm italic">{user?.role}</p>
 
               {user?.role === ROLES.SISTEMA && (
-                <div className="mt-2 w-full flex flex-col gap-1 items-center bg-black/10 p-2 rounded-lg text-xs" style={{ backgroundColor: theme.bg3 }}>
-                  <label className="font-bold uppercase text-amber-500">🏢 Entorno de Tienda</label>
-                  <select
-                    value={activeStore || "ALL"}
-                    onChange={handleStoreChange}
-                    className="w-full p-2 outline-none rounded mt-1 overflow-hidden text-ellipsis shadow-sm"
-                    style={{ backgroundColor: theme.bg }}
+                <div className="w-full flex flex-col gap-2">
+                  {/* Botón de toggle SOLO para Mobile */}
+                  <button
+                    onClick={() => setShowAdminSettings(!showAdminSettings)}
+                    className="md:hidden w-full flex items-center justify-between p-2 rounded-lg text-xs font-bold uppercase transition-colors"
+                    style={{ backgroundColor: theme.bg3, color: showAdminSettings ? '#f97316' : theme.text }}
                   >
-                    <option value="ALL">🌐 TODAS (Dashboard Global)</option>
-                    {activeStore && !stores.find(s => s.id === activeStore) && (
-                      <option value={activeStore}>🏬 Cargando tienda...</option>
-                    )}
-                    {stores.map(s => (
-                      <option key={s.id} value={s.id}>🏬 {s.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+                    <span>⚙️ Ajustes de Sistema</span>
+                    <span className={`transition-transform duration-300 ${showAdminSettings ? "rotate-180" : ""}`}>
+                      ▼
+                    </span>
+                  </button>
 
-              {/* Simulador de Rol — solo visible para SISTEMA, siempre mostrado aunque se simule otro rol */}
-              {user?.role === ROLES.SISTEMA && (
-                <div className="mt-2 w-full flex flex-col gap-1 items-center p-2 rounded-lg text-xs" style={{ backgroundColor: theme.bg3 }}>
-                  <label className="font-bold uppercase" style={{ color: simulatedRole ? '#f97316' : '#a3a3a3' }}>
-                    {simulatedRole ? `🎭 Simulando: ${simulatedRole}` : '🎭 Modo de Vista'}
-                  </label>
-                  <select
-                    value={simulatedRole || ""}
-                    onChange={handleSimulationChange}
-                    className="w-full p-2 outline-none rounded mt-1 shadow-sm"
-                    style={{ backgroundColor: theme.bg, border: simulatedRole ? '1px solid #f97316' : 'none' }}
-                  >
-                    <option value="">👑 SISTEMA (Sin simulación)</option>
-                    <option value="ADMINISTRADOR">🏪 Administrador</option>
-                    <option value="ENCARGADO">📋 Encargado</option>
-                    <option value="VENDEDOR">🛒 Vendedor</option>
-                  </select>
-                  {simulatedRole && (
-                    <p className="text-orange-400 text-center mt-1" style={{ fontSize: '0.65rem' }}>
-                      ⚠️ Vista restringida activa. El servidor opera como {simulatedRole}.
-                    </p>
-                  )}
+                  {/* Contenedor de Selectores: Siempre visible en Desktop (md:flex), colapsable en Mobile */}
+                  <div className={`
+                    w-full flex-col gap-2 
+                    ${showAdminSettings ? "flex" : "hidden"} 
+                    md:flex
+                  `}>
+                    {/* Entorno de Tienda */}
+                    <div className="w-full flex flex-col gap-1 items-center bg-black/10 p-2 rounded-lg text-xs" style={{ backgroundColor: theme.bg3 }}>
+                      <label className="font-bold uppercase text-amber-500">🏢 Entorno de Tienda</label>
+                      <select
+                        value={activeStore || "ALL"}
+                        onChange={handleStoreChange}
+                        className="w-full p-2 outline-none rounded mt-1 overflow-hidden text-ellipsis shadow-sm"
+                        style={{ backgroundColor: theme.bg }}
+                      >
+                        <option value="ALL">🌐 TODAS (Dashboard Global)</option>
+                        {activeStore && !stores.find(s => s.id === activeStore) && (
+                          <option value={activeStore}>🏬 Cargando tienda...</option>
+                        )}
+                        {stores.map(s => (
+                          <option key={s.id} value={s.id}>🏬 {s.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Simulador de Rol */}
+                    <div className="w-full flex flex-col gap-1 items-center p-2 rounded-lg text-xs" style={{ backgroundColor: theme.bg3 }}>
+                      <label className="font-bold uppercase" style={{ color: simulatedRole ? '#f97316' : '#a3a3a3' }}>
+                        {simulatedRole ? `🎭 Simulando: ${simulatedRole}` : '🎭 Modo de Vista'}
+                      </label>
+                      <select
+                        value={simulatedRole || ""}
+                        onChange={handleSimulationChange}
+                        className="w-full p-2 outline-none rounded mt-1 shadow-sm"
+                        style={{ backgroundColor: theme.bg, border: simulatedRole ? '1px solid #f97316' : 'none' }}
+                      >
+                        <option value="">👑 SISTEMA (Sin simulación)</option>
+                        <option value="ADMINISTRADOR">🏪 Administrador</option>
+                        <option value="ENCARGADO">📋 Encargado</option>
+                        <option value="VENDEDOR">🛒 Vendedor</option>
+                      </select>
+                      {simulatedRole && (
+                        <p className="text-orange-400 text-center mt-1" style={{ fontSize: '0.65rem' }}>
+                          ⚠️ Vista restringida activa.
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </>
@@ -230,12 +301,13 @@ const Sidebar = ({ menuItems = [], onLogout, isMobileOpen, onCloseMobile }) => {
         </nav>
       </div>
 
-      {/* Footer: Toggle + Logout */}
+      {/* Footer: Toggle + Install + Logout */}
       <div
         className={`transition-all duration-50 shrink-0 ${isOpen ? "opacity-100 w-full" : "opacity-0 w-0 overflow-hidden"
-          } flex flex-col gap-2 p-6`}
+          } flex flex-col gap-4 p-6`}
       >
         <ThemeToggle />
+
         <ThemedButton
           onClick={() => {
             onLogout();

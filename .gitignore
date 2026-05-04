@@ -7,10 +7,20 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+/jspm_packages
+
+# Build artifacts
 dist
 dist-ssr
-*.local
+build/
+.vite/
+
+# Environment files (CRITICAL: Never commit these)
+.env
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*
@@ -23,24 +33,14 @@ dist-ssr
 *.sln
 *.sw?
 
-# Environment files
-.env
-.env.local
-.env.*.local
-
-# Build
-build/
-
-# Vite
-.vite/
+# OS
+Thumbs.db
 
 # Testing
 coverage/
 
-# OS
-Thumbs.db
-
-# Misc
-*.local
-
-
+# Agent / SDD
+.atl/
+# openspec/ is usually COMMITTED for team collaboration, 
+# but if you want it private, uncomment the line below:
+# openspec/
