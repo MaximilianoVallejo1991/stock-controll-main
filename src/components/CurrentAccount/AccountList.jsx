@@ -14,6 +14,7 @@ const AccountList = () => {
     const [accounts, setAccounts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [error, setError] = useState(null);
     const { theme } = useTheme();
     const navigate = useNavigate();
     const activeStore = useUserStore((state) => state.activeStore);
@@ -23,11 +24,13 @@ const AccountList = () => {
 
     const fetchAccounts = async () => {
         setIsLoading(true);
+        setError(null);
         try {
             const res = await axios.get("/api/accounts");
             setAccounts(res.data);
         } catch (err) {
             console.error("Error fetching accounts:", err);
+            setError(err.response?.data?.message || "No tenés permiso para ver esta sección.");
         } finally {
             setIsLoading(false);
         }
@@ -63,7 +66,13 @@ const AccountList = () => {
             header: "Estado",
             accessorKey: "status",
             cell: ({ getValue }) => (
-                <span className={`px-2 py-1 rounded-full text-xs font-bold ${getValue() === 'OPEN' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                <span 
+                    className="px-3 py-1 rounded-full text-[10px] font-black tracking-tighter transition-colors"
+                    style={{ 
+                        backgroundColor: getValue() === 'OPEN' ? theme.successBg : theme.dangerBg,
+                        color: getValue() === 'OPEN' ? theme.successText : theme.dangerText
+                    }}
+                >
                     {getValue() === 'OPEN' ? 'ABIERTA' : 'CERRADA'}
                 </span>
             )
@@ -105,7 +114,15 @@ const AccountList = () => {
             </div>
 
             {isLoading ? (
-                <div className="text-center py-10 animate-pulse">Cargando cuentas...</div>
+                <div className="text-center py-20 flex flex-col items-center gap-4 animate-pulse">
+                    <div className="w-10 h-10 border-4 border-t-blue-500 rounded-full animate-spin"></div>
+                    <p className="font-bold opacity-70">Cargando cuentas...</p>
+                </div>
+            ) : error ? (
+                <div className="text-center py-20 flex flex-col items-center gap-4">
+                    <p className="text-red-500 font-bold">{error}</p>
+                    <ThemedButton onClick={fetchAccounts}>Reintentar</ThemedButton>
+                </div>
             ) : (
                 <DataTable columns={columns} data={filteredAccounts} />
             )}

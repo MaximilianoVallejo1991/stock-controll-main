@@ -37,7 +37,8 @@ const DataTable = ({ columns, data }) => {
         <input
           type="text"
           placeholder="Buscar..."
-          className="px-4 py-2 border rounded w-full max-w-sm"
+          className="px-4 py-2 border rounded-xl w-full max-w-sm shadow-sm transition-all focus:ring-2 focus:ring-blue-500 outline-none"
+          style={{ backgroundColor: theme.bg, borderColor: theme.border, color: theme.text }}
           value={globalFilter ?? ''}
           onChange={(e) => setGlobalFilter(e.target.value)}
         />

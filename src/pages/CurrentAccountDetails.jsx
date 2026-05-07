@@ -91,12 +91,19 @@ const CurrentAccountDetails = () => {
             accessorKey: "type",
             cell: ({ getValue }) => {
                 const types = {
-                    SALE: { label: "VENTA", color: "text-red-600 bg-red-50" },
-                    PAYMENT: { label: "PAGO", color: "text-green-600 bg-green-50" },
-                    ADJUSTMENT: { label: "AJUSTE", color: "text-amber-600 bg-amber-50" }
+                    SALE: { label: "VENTA", bg: theme.dangerBg, text: theme.dangerText },
+                    PAYMENT: { label: "PAGO", bg: theme.successBg, text: theme.successText },
+                    ADJUSTMENT: { label: "AJUSTE", bg: theme.warning + '25', text: theme.warning }
                 };
-                const t = types[getValue()] || { label: getValue(), color: "bg-gray-100" };
-                return <span className={`px-2 py-1 rounded font-bold text-[10px] ${t.color}`}>{t.label}</span>;
+                const t = types[getValue()] || { label: getValue(), bg: theme.bg, text: theme.text };
+                return (
+                    <span 
+                        className="px-2 py-1 rounded font-bold text-[10px] transition-colors"
+                        style={{ backgroundColor: t.bg, color: t.text }}
+                    >
+                        {t.label}
+                    </span>
+                );
             }
         },
         {
@@ -112,7 +119,7 @@ const CurrentAccountDetails = () => {
             header: "Pagado",
             accessorKey: "paidAmount",
             cell: ({ getValue }) => (
-                <span className={getValue() > 0 ? "text-green-600 font-bold" : ""}>
+                <span className="font-bold" style={{ color: getValue() > 0 ? theme.successText : theme.text }}>
                     {formatCurrency(getValue())}
                 </span>
             )
@@ -121,18 +128,36 @@ const CurrentAccountDetails = () => {
             header: "Deuda Generada",
             accessorKey: "debtAmount",
             cell: ({ getValue }) => (
-                <span className={getValue() > 0 ? "text-red-600 font-bold" : ""}>
+                <span className="font-bold" style={{ color: getValue() > 0 ? theme.dangerText : theme.text }}>
                     {formatCurrency(getValue())}
                 </span>
             )
         }
     ], []);
 
-    if (isLoading) return <div className="p-10 text-center animate-pulse">Cargando detalles de cuenta...</div>;
-    if (!account) return <div className="p-10 text-center">No se encontró la cuenta.</div>;
+    if (isLoading) return (
+        <div className="min-h-screen flex items-center justify-center transition-colors duration-300" style={{ backgroundColor: theme.bg, color: theme.text }}>
+            <div className="flex flex-col items-center gap-4 animate-pulse">
+                <div className="w-12 h-12 border-4 border-t-blue-600 rounded-full animate-spin"></div>
+                <p className="font-bold">Cargando detalles de cuenta...</p>
+            </div>
+        </div>
+    );
+
+    if (!account) return (
+        <div className="min-h-screen flex items-center justify-center transition-colors duration-300" style={{ backgroundColor: theme.bg, color: theme.text }}>
+            <div className="text-center p-8 rounded-2xl border" style={{ backgroundColor: theme.bgcards, borderColor: theme.border }}>
+                <p className="text-xl font-bold">No se encontró la cuenta.</p>
+                <ThemedButton className="mt-4" onClick={() => navigate("/accounts")}>Volver</ThemedButton>
+            </div>
+        </div>
+    );
 
     return (
-        <div className="p-4 sm:p-8 max-w-6xl mx-auto space-y-6 print:m-0 print:p-0">
+        <div 
+            className="p-4 sm:p-8 max-w-6xl mx-auto space-y-6 print:m-0 print:p-0 transition-colors duration-300"
+            style={{ color: theme.text }}
+        >
             {/* Encabezado formal solo para impresión */}
             <div className="hidden print:flex justify-between items-end border-b-2 border-black pb-4 mb-8">
                 <div>
@@ -153,26 +178,41 @@ const CurrentAccountDetails = () => {
             </button>
 
             {/* Header de Cuenta */}
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden print:shadow-none print:border-none">
+            <div 
+                className="rounded-2xl shadow-xl border overflow-hidden print:shadow-none print:border-none transition-all duration-300"
+                style={{ backgroundColor: theme.bgcards, borderColor: theme.border }}
+            >
                 <div className="p-6 sm:p-8 flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex gap-4 items-center">
-                        <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-inner print:hidden">
+                        <div 
+                            className="w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-black shadow-lg print:hidden transition-transform hover:scale-105"
+                            style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.colorToggle})` }}
+                        >
                             {account.client.lastName[0]}{account.client.firstName[0]}
                         </div>
                         <div>
                             <h1 className="text-2xl sm:text-3xl font-black">{account.client.lastName}, {account.client.firstName}</h1>
                             <div className="flex gap-2 items-center mt-1">
                                 <span className="text-xs font-bold opacity-50 uppercase tracking-widest">DNI: {account.client.dni}</span>
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black tracking-tighter print-force-bg ${account.status === 'OPEN' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                <span 
+                                    className="px-3 py-1 rounded-full text-[10px] font-black tracking-tighter print-force-bg transition-colors"
+                                    style={{ 
+                                        backgroundColor: account.status === 'OPEN' ? theme.successBg : theme.dangerBg,
+                                        color: account.status === 'OPEN' ? theme.successText : theme.dangerText
+                                    }}
+                                >
                                     {account.status === 'OPEN' ? 'CUENTA ABIERTA' : 'CUENTA CERRADA'}
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-zinc-50 dark:bg-zinc-800 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 flex flex-col items-end min-w-[200px] print:border-none print:bg-transparent">
-                        <p className="text-xs font-bold opacity-50 uppercase mb-1">Saldo Actual</p>
-                        <p className={`text-3xl font-black ${account.balance > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                    <div 
+                        className="p-4 sm:p-6 rounded-2xl border flex flex-col items-end min-w-[220px] print:border-none print:bg-transparent shadow-inner transition-all"
+                        style={{ backgroundColor: theme.bg, borderColor: theme.border }}
+                    >
+                        <p className="text-[10px] font-black opacity-40 uppercase tracking-[0.2em] mb-1">Saldo Adeudado</p>
+                        <p className={`text-4xl font-black tracking-tighter ${account.balance > 0 ? 'text-red-500' : 'text-green-500'}`}>
                             {formatCurrency(account.balance)}
                         </p>
                         <div className="flex gap-2 mt-4 no-print">
@@ -204,10 +244,20 @@ const CurrentAccountDetails = () => {
             </div>
 
             {/* Listado de Movimientos */}
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 p-6 sm:p-8">
-                <div className="flex items-center gap-2 mb-6">
-                    <FaFileInvoiceDollar className="text-2xl text-blue-600" />
-                    <h2 className="text-xl font-bold">Historial de Movimientos</h2>
+            <div 
+                className="rounded-3xl shadow-2xl border p-6 sm:p-10 transition-all duration-500"
+                style={{ backgroundColor: theme.bgcards, borderColor: theme.border }}
+            >
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 rounded-2xl" style={{ backgroundColor: theme.primary + '20' }}>
+                            <FaFileInvoiceDollar className="text-2xl" style={{ color: theme.primary }} />
+                        </div>
+                        <h2 className="text-2xl font-black tracking-tight" style={{ color: theme.text }}>Historial de Movimientos</h2>
+                    </div>
+                    <div className="hidden sm:block text-xs font-bold opacity-40 uppercase tracking-widest">
+                        {account.movements?.length || 0} Registros
+                    </div>
                 </div>
 
                 <DataTable columns={columns} data={account.movements} />

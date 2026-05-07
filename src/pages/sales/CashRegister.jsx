@@ -129,6 +129,32 @@ const CashRegister = ({ onGoToPOS }) => {
         }
     };
 
+    /**
+     * Calcula los totales por método de pago de una orden.
+     * Para ventas COMBINADAS usa el desglose de orderPayments.
+     * Para ventas simples usa amoutPayed directamente.
+     */
+    const getOrderTotals = (order) => {
+        const totals = { efectivo: 0, transferencia: 0, tarjeta: 0, otros: 0 };
+        if (order.orderPayments && order.orderPayments.length > 0) {
+            order.orderPayments.forEach(p => {
+                const m = (p.paymentMethod || '').toLowerCase();
+                if (m === 'efectivo')          totals.efectivo      += p.amount;
+                else if (m === 'transferencia') totals.transferencia += p.amount;
+                else if (m === 'tarjeta')       totals.tarjeta       += p.amount;
+                // CUENTA_CORRIENTE y otros no se suman a caja física
+            });
+        } else {
+            // Fallback para órdenes sin desglose
+            const m = (order.paymentMethod || 'efectivo').toLowerCase();
+            if (m === 'efectivo')           totals.efectivo      += order.amoutPayed;
+            else if (m === 'transferencia') totals.transferencia += order.amoutPayed;
+            else if (m === 'tarjeta')       totals.tarjeta       += order.amoutPayed;
+            else if (m !== 'cuenta_corriente' && m !== 'combinado') totals.efectivo += order.amoutPayed;
+        }
+        return totals;
+    };
+
     // Al cargar, si la caja ya está abierta, mantener el panel colapsado (salvo decisión del usuario)
     useEffect(() => {
         if (currentRegister) {
@@ -175,11 +201,12 @@ const CashRegister = ({ onGoToPOS }) => {
         setAmount(num);
 
         // Calculate expected to see if there is a difference
+        // Usamos getOrderTotals para manejar correctamente ventas COMBINADAS
         let fisico = currentRegister.openingAmount;
         history.forEach(item => {
             if (item._typeModel === 'ORDER') {
-                const method = item.paymentMethod ? item.paymentMethod.toLowerCase() : 'efectivo';
-                if (method === 'efectivo') fisico += item.amoutPayed;
+                const t = getOrderTotals(item);
+                fisico += t.efectivo;
             } else {
                 if (item.type === 'INCOME') fisico += item.amount;
                 else if (item.type === 'EXPENSE') fisico -= item.amount;
@@ -518,6 +545,25 @@ const CashRegister = ({ onGoToPOS }) => {
                                 {history.map((item, idx) => {
                                     const isOrder = item._typeModel === 'ORDER';
                                     const isIncome = isOrder || item.type === 'INCOME';
+                                    const isCombined = isOrder && item.orderPayments?.length > 1;
+
+                                    // Ícono por método de pago
+                                    const methodIcon = (m = '') => {
+                                        const ml = m.toLowerCase();
+                                        if (ml === 'efectivo')           return '💵';
+                                        if (ml === 'transferencia')      return '🏦';
+                                        if (ml === 'tarjeta')            return '💳';
+                                        if (ml === 'cuenta_corriente')   return '📒';
+                                        return '💰';
+                                    };
+                                    const methodLabel = (m = '') => {
+                                        const ml = m.toLowerCase();
+                                        if (ml === 'efectivo')           return 'Efectivo';
+                                        if (ml === 'transferencia')      return 'Transferencia';
+                                        if (ml === 'tarjeta')            return 'Tarjeta';
+                                        if (ml === 'cuenta_corriente')   return 'Cta. Cte.';
+                                        return m;
+                                    };
 
                                     let label = '';
                                     let color = '';
@@ -537,10 +583,75 @@ const CashRegister = ({ onGoToPOS }) => {
                                         bgColor = theme.dangerBg;
                                     }
 
+                                    const clientName = isOrder
+                                        ? (item.client ? `${item.client.firstName} ${item.client.lastName || ''}`.trim() : 'Consumidor Final')
+                                        : null;
+
                                     const desc = isOrder
-                                        ? `Venta Facturada a ${item.client ? (item.client.firstName + " " + (item.client.lastName || "")) : 'Consumidor Final'} (${item.paymentMethod || 'Efectivo'})`
+                                        ? `Venta a ${clientName}`
                                         : (item.description || 'Libre disponibilidad / Sin referencia formal');
 
+                                    const timeStr = new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                    const userName = item.user?.firstName || 'Cajero';
+
+                                    // ── Venta COMBINADA: card agrupador ────────────────────────────
+                                    if (isCombined) {
+                                        return (
+                                            <div
+                                                key={idx}
+                                                className="border-2 rounded-xl overflow-hidden"
+                                                style={{ borderColor: theme.info + '60' }}
+                                            >
+                                                {/* Encabezado del grupo */}
+                                                <div
+                                                    className="px-3 pt-3 pb-2 flex justify-between items-start cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                                                    onClick={() => setSelectedMovement(item)}
+                                                    title="Ver detalle completo"
+                                                >
+                                                    <div className="flex flex-col gap-1 flex-1 min-w-0">
+                                                        <div className="flex gap-2 items-center flex-wrap">
+                                                            <span className="font-bold px-1.5 py-0.5 text-[9px] rounded border border-current whitespace-nowrap" style={{ color, backgroundColor: bgColor }}>
+                                                                {label}
+                                                            </span>
+                                                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border whitespace-nowrap" style={{ color: theme.info, borderColor: theme.info + '50', backgroundColor: theme.infoBg }}>
+                                                                COMBINADO
+                                                            </span>
+                                                            <span className="font-mono text-sm font-bold shrink-0" style={{ color: theme.success }}>
+                                                                +{formatCurrency(item.amount)}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-xs opacity-70 truncate">{desc}</p>
+                                                    </div>
+                                                    <div className="flex flex-col items-end text-[10px] opacity-60 ml-2 border-l pl-2 shrink-0" style={{ borderColor: theme.bg3 }}>
+                                                        <span className="font-semibold">{timeStr}</span>
+                                                        <span>{userName}</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Sub-items: uno por método de pago */}
+                                                <div className="flex flex-col gap-1 px-2 pb-2">
+                                                    {item.orderPayments.map((p, pIdx) => (
+                                                        <div
+                                                            key={pIdx}
+                                                            className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs"
+                                                            style={{ backgroundColor: theme.bg, borderLeft: `3px solid ${theme.info}40` }}
+                                                        >
+                                                            <span className="flex items-center gap-1.5 font-medium opacity-80">
+                                                                <span>{methodIcon(p.paymentMethod)}</span>
+                                                                <span>{methodLabel(p.paymentMethod)}</span>
+                                                            </span>
+                                                            <span className="font-mono font-bold" style={{ color: p.paymentMethod?.toLowerCase() === 'cuenta_corriente' ? '#f97316' : theme.success }}>
+                                                                {p.paymentMethod?.toLowerCase() === 'cuenta_corriente' ? '📒 ' : '+'}
+                                                                {formatCurrency(p.amount)}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+
+                                    // ── Venta simple o movimiento manual ───────────────────────────
                                     return (
                                         <div
                                             key={idx}
@@ -554,18 +665,24 @@ const CashRegister = ({ onGoToPOS }) => {
                                                     <span className="font-bold px-1.5 py-0.5 text-[9px] md:text-[10px] rounded border border-current whitespace-nowrap" style={{ color: color, backgroundColor: bgColor }}>
                                                         {label}
                                                     </span>
+                                                    {isOrder && (
+                                                        <span className="flex items-center gap-1 text-[10px] font-bold opacity-70 border px-1 rounded" style={{ borderColor: theme.bg3 }}>
+                                                            <span>{methodIcon(item.orderPayments?.[0]?.paymentMethod || item.paymentMethod)}</span>
+                                                            <span className="uppercase">{methodLabel(item.orderPayments?.[0]?.paymentMethod || item.paymentMethod)}</span>
+                                                        </span>
+                                                    )}
                                                     <span className="font-mono text-sm md:text-base font-semibold shrink-0" style={{ color: isIncome ? theme.success : theme.danger }}>
-                                                        {isIncome ? '+' : '-'}{formatCurrency(isOrder ? item.amount : item.amount)}
+                                                        {isIncome ? '+' : '-'}{formatCurrency(item.amount)}
                                                     </span>
                                                 </div>
                                                 <p className="opacity-70 mt-1 truncate text-xs md:text-sm" title={desc}>{desc}</p>
                                             </div>
                                             <div className="flex flex-col items-end text-[10px] md:text-xs opacity-60 ml-2 border-l pl-2 min-w-[70px] md:min-w-[80px]" style={{ borderColor: theme.bg3 }}>
-                                                <span className="font-semibold">{new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                <span className="truncate max-w-[60px] md:max-w-28 text-right" title={item.user?.firstName}>{item.user?.firstName || 'Cajero'}</span>
+                                                <span className="font-semibold">{timeStr}</span>
+                                                <span className="truncate max-w-[60px] md:max-w-28 text-right" title={userName}>{userName}</span>
                                             </div>
                                         </div>
-                                    )
+                                    );
                                 })}
 
                                 {/* STARTING RECORD */}
@@ -614,13 +731,13 @@ const CashRegister = ({ onGoToPOS }) => {
                         let transferencias = 0;
                         let tarjetas = 0;
 
+                        // getOrderTotals desglosa ventas COMBINADAS usando orderPayments
                         history.forEach(item => {
                             if (item._typeModel === 'ORDER') {
-                                const method = item.paymentMethod ? item.paymentMethod.toLowerCase() : 'efectivo';
-                                if (method === 'efectivo') fisico += item.amoutPayed;
-                                else if (method === 'transferencia') transferencias += item.amoutPayed;
-                                else if (method === 'tarjeta') tarjetas += item.amoutPayed;
-                                else fisico += item.amoutPayed;
+                                const t = getOrderTotals(item);
+                                fisico        += t.efectivo;
+                                transferencias += t.transferencia;
+                                tarjetas       += t.tarjeta;
                             } else {
                                 if (item.type === 'INCOME') fisico += item.amount;
                                 else if (item.type === 'EXPENSE') fisico -= item.amount;
