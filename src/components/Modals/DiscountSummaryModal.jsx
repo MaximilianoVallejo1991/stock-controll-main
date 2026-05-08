@@ -56,10 +56,9 @@ const DiscountSummaryModal = ({
   const getProductDiscounts = (pid) => itemDiscounts.filter(d => d.productId === pid && d.amount > 0);
 
   // ── Breakdown activo ───────────────────────────────────────────────────────
-  // IMPORTANTE: para método único usamos productsTotal (pre-descuento) como amount.
-  // Esto evita la referencia circular donde el preview recalcula el descuento
-  // sobre el total ya descontado. El monto real (finalTotal) se envía solo
-  // al confirmar la venta, no al endpoint de preview.
+  // En modo simple: mandamos productsTotal (bruto) como importe del método.
+  // Esto evita la referencia circular donde el evaluador calculaba el descuento
+  // sobre el finalTotal (post-descuento) en lugar del precio original.
   const activeBreakdown = isSplit
     ? splitBreakdown
     : [{ method: singleMethod, amount: productsTotal }];
@@ -147,10 +146,12 @@ const DiscountSummaryModal = ({
 
   const handleConfirm = () => {
     if (!isCovered) return;
-    // Para método único, enviamos finalTotal (precio post-descuento real) como amount,
-    // NO productsTotal, para que el OrderPayment quede correcto en la DB.
+    // activeBreakdown usa productsTotal para el cálculo del preview (evita loop circular).
+    // Al confirmar la venta, el backend necesita el monto REAL pagado:
+    //   - No-split: finalTotal (precio post-descuento que el cliente efectivamente paga)
+    //   - Split: los importes explícitos que el usuario ingresó (ya son correctos)
     const confirmBreakdown = isSplit
-      ? activeBreakdown
+      ? splitBreakdown
       : [{ method: singleMethod, amount: finalTotal }];
     onConfirm(confirmBreakdown);
   };

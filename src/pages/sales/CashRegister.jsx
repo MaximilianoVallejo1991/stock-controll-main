@@ -131,11 +131,13 @@ const CashRegister = ({ onGoToPOS }) => {
 
     /**
      * Calcula los totales por método de pago de una orden.
+     * Retorna ceros para órdenes CANCELADAS — no deben afectar el arqueo.
      * Para ventas COMBINADAS usa el desglose de orderPayments.
-     * Para ventas simples usa amoutPayed directamente.
      */
     const getOrderTotals = (order) => {
         const totals = { efectivo: 0, transferencia: 0, tarjeta: 0, otros: 0 };
+        // Las canceladas no entran al cajón → no suman
+        if (order.status === 'CANCELLED') return totals;
         if (order.orderPayments && order.orderPayments.length > 0) {
             order.orderPayments.forEach(p => {
                 const m = (p.paymentMethod || '').toLowerCase();
@@ -565,11 +567,16 @@ const CashRegister = ({ onGoToPOS }) => {
                                         return m;
                                     };
 
+                                    const isCancelled = isOrder && item.status === 'CANCELLED';
                                     let label = '';
                                     let color = '';
                                     let bgColor = '';
 
-                                    if (isOrder) {
+                                    if (isOrder && isCancelled) {
+                                        label = 'ANULADA';
+                                        color = theme.danger;
+                                        bgColor = theme.dangerBg;
+                                    } else if (isOrder) {
                                         label = 'VENTA POS';
                                         color = theme.info;
                                         bgColor = theme.infoBg;
@@ -656,22 +663,22 @@ const CashRegister = ({ onGoToPOS }) => {
                                         <div
                                             key={idx}
                                             onClick={() => setSelectedMovement(item)}
-                                            className="p-3 border rounded-lg flex justify-between items-center hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
-                                            style={{ borderColor: theme.bg3 }}
-                                            title="Ver detalle completo"
+                                            className={`p-3 border rounded-lg flex justify-between items-center hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer ${isCancelled ? 'opacity-50' : ''}`}
+                                            style={{ borderColor: isCancelled ? theme.danger + '60' : theme.bg3 }}
+                                            title={isCancelled ? 'Venta anulada — no cuenta en el arqueo' : 'Ver detalle completo'}
                                         >
                                             <div className="flex flex-col text-sm max-w-[65%] md:max-w-[75%]">
                                                 <div className="flex gap-2 items-center flex-wrap">
                                                     <span className="font-bold px-1.5 py-0.5 text-[9px] md:text-[10px] rounded border border-current whitespace-nowrap" style={{ color: color, backgroundColor: bgColor }}>
                                                         {label}
                                                     </span>
-                                                    {isOrder && (
+                                                    {isOrder && !isCancelled && (
                                                         <span className="flex items-center gap-1 text-[10px] font-bold opacity-70 border px-1 rounded" style={{ borderColor: theme.bg3 }}>
                                                             <span>{methodIcon(item.orderPayments?.[0]?.paymentMethod || item.paymentMethod)}</span>
                                                             <span className="uppercase">{methodLabel(item.orderPayments?.[0]?.paymentMethod || item.paymentMethod)}</span>
                                                         </span>
                                                     )}
-                                                    <span className="font-mono text-sm md:text-base font-semibold shrink-0" style={{ color: isIncome ? theme.success : theme.danger }}>
+                                                    <span className={`font-mono text-sm md:text-base font-semibold shrink-0 ${isCancelled ? 'line-through' : ''}`} style={{ color: isIncome ? theme.success : theme.danger }}>
                                                         {isIncome ? '+' : '-'}{formatCurrency(item.amount)}
                                                     </span>
                                                 </div>

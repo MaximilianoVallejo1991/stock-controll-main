@@ -292,7 +292,10 @@ const NewSale = () => {
       const payload = {
         items: cart.map(item => ({ id: item.id, quantity: item.quantity })),
         clientId: selectedClient?.id || null,
-        paymentMethods: breakdown.length > 0 ? breakdown.map(p => p.method) : ["Efectivo"],
+        // Si el breakdown está vacío (modo split sin importes aún), no defaultear
+        // a Efectivo: queremos que el motor no aplique descuentos de método de pago
+        // hasta que el usuario ingrese un importe explícito en algún medio.
+        paymentMethods: breakdown.map(p => p.method),
         paymentBreakdown: breakdown,
         preferredRuleIds: preferred,
         excludedRuleIds: excluded
