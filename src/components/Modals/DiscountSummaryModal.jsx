@@ -146,13 +146,24 @@ const DiscountSummaryModal = ({
 
   const handleConfirm = () => {
     if (!isCovered) return;
-    // activeBreakdown usa productsTotal para el cálculo del preview (evita loop circular).
-    // Al confirmar la venta, el backend necesita el monto REAL pagado:
-    //   - No-split: finalTotal (precio post-descuento que el cliente efectivamente paga)
-    //   - Split: los importes explícitos que el usuario ingresó (ya son correctos)
+    // Adjuntamos baseAmount = porción del subtotal BRUTO que corresponde a cada
+    // medio de pago. El evaluador del backend usa baseAmount (cuando existe) para
+    // calcular el descuento sobre el precio original, evitando la referencia circular
+    // donde el descuento se calculaba sobre el monto ya descontado.
+    //
+    // • No-split: baseAmount = productsTotal (el bruto completo)
+    // • Split   : baseAmount = proporción del bruto según el peso de cada tramo
     const confirmBreakdown = isSplit
-      ? splitBreakdown
-      : [{ method: singleMethod, amount: finalTotal }];
+      ? (() => {
+          const totalSplitPaid = splitBreakdown.reduce((s, p) => s + p.amount, 0);
+          return splitBreakdown.map(p => ({
+            ...p,
+            baseAmount: totalSplitPaid > 0
+              ? parseFloat(((p.amount / totalSplitPaid) * productsTotal).toFixed(2))
+              : p.amount,
+          }));
+        })()
+      : [{ method: singleMethod, amount: finalTotal, baseAmount: productsTotal }];
     onConfirm(confirmBreakdown);
   };
 
