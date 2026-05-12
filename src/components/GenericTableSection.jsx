@@ -72,11 +72,9 @@ export const GenericTableSection = ({ title, endpoint, fields, columns, createRo
   const filteredDataItems = useMemo(() => {
     let filtered = data;
     
-    // Filtramos por tienda si no es SISTEMA Puro (sin simulación)
-    // Usamos el activeStore del store global como fuente de verdad
-    if (currentRole !== ROLES.SISTEMA && endpoint !== "stores") {
-      filtered = filtered.filter(item => item.storeId === activeStore);
-    }
+    // NOTE: El filtrado por tienda ya viene resuelto desde el Backend 
+    // según el rol del usuario y el header x-store-id enviado por el interceptor.
+
 
     // Then filter by status
     if (statusFilter === "active") {
