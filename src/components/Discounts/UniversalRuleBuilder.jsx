@@ -174,6 +174,25 @@ const UniversalRuleBuilder = ({ form, onChange, errors, inputStyle }) => {
           </div>
         </FormField>
 
+        {/* Allow Partial Toggle (Only if payment methods are selected) */}
+        {(form.u_paymentMethods ?? []).length > 0 && (
+          <div className="flex flex-col gap-2 p-3 rounded bg-black/5 dark:bg-white/5 border border-dashed border-primary/30">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={form.allowPartial ?? false}
+                onChange={(e) => onChange('allowPartial', e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <span className="text-sm font-semibold">Permitir descuento proporcional en pagos parciales</span>
+            </label>
+            <p className="text-[11px] leading-tight opacity-70">
+              Si está activado, el {form.percentage || 'X'}% se aplicará solo sobre el monto pagado con los medios seleccionados. 
+              Si está desactivado, el descuento solo aplicará si el cliente paga el total de la orden con estos medios.
+            </p>
+          </div>
+        )}
+
         {/* Min Amount */}
         <FormField
           label="Monto mínimo del ticket ($)"
