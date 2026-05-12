@@ -99,7 +99,7 @@ const NewSale = () => {
 
     return mockProducts.filter(p => {
 
-      const matchCategory = category === "Todas" || p.category === category;
+      const matchCategory = category === "Todas" || p.category?.trim() === category?.trim();
       const text = search.toLowerCase();
       const matchText =
         p.name.toLowerCase().includes(text) ||
