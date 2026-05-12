@@ -1,6 +1,7 @@
 import axios from "axios";
 import GenericTableSection from "../components/GenericTableSection";
 import { ROLES, EMPLOYEE_ROLES_DET } from "../constants/roles";
+import useUserStore from "../store/userStore";
 
 export const Employees = () => {
 
@@ -13,6 +14,13 @@ export const Employees = () => {
 
   ];
 
+  const user = useUserStore((state) => state.user);
+  const isSudo = user?.role === ROLES.SISTEMA;
+
+  const filteredRoles = isSudo 
+    ? EMPLOYEE_ROLES_DET 
+    : EMPLOYEE_ROLES_DET.filter(r => r.value !== ROLES.SISTEMA);
+
   const fields = [
     { name: "firstName", label: "Nombre" },
     { name: "lastName", label: "Apellido" },
@@ -21,7 +29,7 @@ export const Employees = () => {
       name: "role",
       label: "Rol",
       type: "select",
-      options: EMPLOYEE_ROLES_DET,
+      options: filteredRoles,
       roles: [ROLES.SISTEMA, ROLES.ADMINISTRADOR],
       editableRoles: [ROLES.SISTEMA, ROLES.ADMINISTRADOR]
     },

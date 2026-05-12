@@ -19,6 +19,7 @@ const EntityDetailsForm = ({
     setIsStockModalOpen,
     setAdminPasswordAction,
     setIsAdminPasswordOpen,
+    loggedInUser,
 }) => {
 
     const renderValue = (value, key) => {
@@ -65,6 +66,11 @@ const EntityDetailsForm = ({
 
         // Campo de contraseña en usuarios: botón de blanqueo
         if (key === "password" && entity === "user") {
+            // No se puede blanquear la clave a uno mismo
+            if (data?.id === loggedInUser?.id) {
+                return <span className="text-xs opacity-50 italic">No puedes blaquear tu propia clave. Comunicate con un administrador.</span>;
+            }
+
             return (
                 <ThemedButton
                     type="button"
@@ -80,7 +86,16 @@ const EntityDetailsForm = ({
 
         // Campo de rol en usuarios
         if (key === "role" && entity === "user") {
-            const isSistema = data?.role === ROLES.SISTEMA || formData.role === ROLES.SISTEMA;
+            const isTargetSistema = data?.role === ROLES.SISTEMA || formData.role === ROLES.SISTEMA;
+            const isSelf = data?.id === loggedInUser?.id;
+            const loggedInRole = (loggedInUser?.role || "").toUpperCase();
+            const isSudo = loggedInRole === ROLES.SISTEMA;
+
+            // Filtrar roles disponibles: Solo SISTEMA ve SISTEMA
+            const availableRoles = isSudo
+                ? EMPLOYEE_ROLES_DET
+                : EMPLOYEE_ROLES_DET.filter(r => r.value !== ROLES.SISTEMA);
+
             return (
                 <select
                     name="role"
@@ -88,15 +103,15 @@ const EntityDetailsForm = ({
                     onChange={(e) => handleChange({ target: { name: "role", value: e.target.value } })}
                     className="w-full p-2.5 rounded-lg border outline-none"
                     style={{ backgroundColor: theme.bg, borderColor: theme.bg4, color: theme.text }}
-                    disabled={isSistema}
+                    disabled={isTargetSistema || isSelf}
                 >
                     <option value="">Seleccionar rol...</option>
-                    {isSistema && (
+                    {(isTargetSistema && !isSudo) && (
                         <option value={ROLES.SISTEMA} style={{ backgroundColor: theme.bg, color: theme.text }}>
                             Sistema
                         </option>
                     )}
-                    {EMPLOYEE_ROLES_DET.map((r) => (
+                    {availableRoles.map((r) => (
                         <option key={r.value} value={r.value} style={{ backgroundColor: theme.bg, color: theme.text }}>
                             {r.label}
                         </option>

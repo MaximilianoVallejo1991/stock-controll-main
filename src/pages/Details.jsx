@@ -350,6 +350,7 @@ const Details = () => {
           <EntityDetailsForm
             formData={formData}
             data={data}
+            loggedInUser={user}
             isEditing={isEditing}
             entity={entity}
             entityFieldRules={entityFieldRules}
@@ -379,12 +380,14 @@ const Details = () => {
         {/* Acciones de edición: Dar de baja / Guardar */}
         {isEditing && (
           <div className="flex flex-row justify-between mt-6">
-            <ThemedButton
-              onClick={() => { setModalAction(data.isActive ? "disable" : "enable"); setIsModalOpen(true); }}
-              style={{ backgroundColor: data.isActive ? theme.danger : theme.success, color: "#fff" }}
-            >
-              {data.isActive ? "Dar de baja" : "Dar de alta"}
-            </ThemedButton>
+            {!(data.isActive && data.id === user.id) && (
+              <ThemedButton
+                onClick={() => { setModalAction(data.isActive ? "disable" : "enable"); setIsModalOpen(true); }}
+                style={{ backgroundColor: data.isActive ? theme.danger : theme.success, color: "#fff" }}
+              >
+                {data.isActive ? "Dar de baja" : "Dar de alta"}
+              </ThemedButton>
+            )}
             <ThemedButton
               disabled={!hasChanges || isSavingHook}
               onClick={() => setConfirmOpen(true)}
