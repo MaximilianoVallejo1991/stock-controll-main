@@ -93,9 +93,10 @@ const AccountList = () => {
     ], [theme, navigate]);
 
     const filteredAccounts = useMemo(() => {
-        if (currentRole === ROLES.SISTEMA) return accounts;
-        return accounts.filter(acc => acc.storeId === activeStore);
-    }, [accounts, currentRole, activeStore]);
+        // El backend ya filtra por storeId para todos los roles excepto SISTEMA.
+        // Confiamos en la respuesta del servidor para evitar discrepancias de sesión.
+        return accounts;
+    }, [accounts]);
 
     const canOpenAccount = [ROLES.SISTEMA, ROLES.ADMINISTRADOR, ROLES.ENCARGADO].includes(currentRole);
 
