@@ -33,7 +33,7 @@ export const Products = () => {
       options: categoryOptions
     },
     { name: "description", label: "Descripción" },
-    { name: "price", label: "Precio", type: "number" },
+    { name: "price", label: "Precio", type: "number", step: "0.01" },
     { name: "stock", label: "Stock", type: "number" },
   ];
 

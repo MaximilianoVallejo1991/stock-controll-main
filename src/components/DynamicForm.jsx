@@ -339,6 +339,7 @@ const DynamicForm = ({
               <input
                 name={field.name}
                 type={field.type || "text"}
+                step={field.step}
                 value={formData[field.name]}
                 style={themedInputStyle}
                 onChange={handleChange}
