@@ -1,6 +1,6 @@
 // src/pages/sales/SalesDashboard.jsx
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import NewSale from "./NewSale";
 import CashRegister from "./CashRegister";
 import { useTheme } from "../../context/ThemeContext";
@@ -8,12 +8,17 @@ import { useTheme } from "../../context/ThemeContext";
 export const SalesDashboard = () => {
     const { theme } = useTheme();
     const location = useLocation();
-    const [activeTab, setActiveTab] = useState("pos"); // pos, register
+    const [searchParams] = useSearchParams();
+    // pos, register — initial value also honors a `?tab=register` deep link (used by
+    // CashRegisterClosedModal's "Abrir caja" action from a sibling screen, e.g. NewSale).
+    const [activeTab, setActiveTab] = useState(() => (searchParams.get("tab") === "register" ? "register" : "pos"));
 
-    // Reset to "pos" tab whenever the user navigates into this route (e.g. from Sidebar)
+    // Reset tab whenever the user (re)navigates into this route (e.g. from Sidebar, or
+    // from a `?tab=register` redirect fired by CashRegisterClosedModal): default to "pos"
+    // unless the URL explicitly asks for "register".
     useEffect(() => {
-        setActiveTab("pos");
-    }, [location.key]);
+        setActiveTab(searchParams.get("tab") === "register" ? "register" : "pos");
+    }, [location.key, searchParams]);
 
     return (
         <div className="h-full w-full flex flex-col pt-4 overflow-hidden" style={{ backgroundColor: theme.bgtotal, color: theme.text }}>
