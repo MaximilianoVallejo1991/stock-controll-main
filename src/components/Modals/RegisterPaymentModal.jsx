@@ -9,6 +9,7 @@ const RegisterPaymentModal = ({ isOpen, onClose, onConfirm, currentBalance }) =>
     const [paymentMethod, setPaymentMethod] = useState("EFECTIVO");
     const [description, setDescription] = useState("");
     const [error, setError] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleKeyDown = useCallback((e) => {
         if (e.key === "Escape" && isOpen) {
@@ -24,6 +25,10 @@ const RegisterPaymentModal = ({ isOpen, onClose, onConfirm, currentBalance }) =>
             if (currentBalance > 0) {
                 setAmount(currentBalance.toString());
             }
+            // Resetea el guard de doble-envío cada vez que el modal (re)abre. El componente
+            // nunca se desmonta (el padre lo renderiza siempre, solo alterna `isOpen`), así que
+            // el estado local sobrevive entre aperturas y debe reiniciarse explícitamente acá.
+            setIsSubmitting(false);
         }
         return () => {
             document.removeEventListener("keydown", handleKeyDown);
@@ -35,6 +40,7 @@ const RegisterPaymentModal = ({ isOpen, onClose, onConfirm, currentBalance }) =>
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        if (isSubmitting) return;
         setError("");
 
         const numAmount = parseFloat(amount);
@@ -43,6 +49,7 @@ const RegisterPaymentModal = ({ isOpen, onClose, onConfirm, currentBalance }) =>
             return;
         }
 
+        setIsSubmitting(true);
         onConfirm({
             amount: numAmount,
             paymentMethod,
@@ -121,11 +128,11 @@ const RegisterPaymentModal = ({ isOpen, onClose, onConfirm, currentBalance }) =>
                     )}
 
                     <div className="flex justify-end gap-3 mt-2">
-                        <ThemedButton type="button" onClick={onClose} className="!bg-transparent border !text-current">
+                        <ThemedButton type="button" onClick={onClose} disabled={isSubmitting} className="!bg-transparent border !text-current">
                             Cancelar
                         </ThemedButton>
-                        <ThemedButton type="submit" className="!bg-green-600 !text-white">
-                            Confirmar Pago
+                        <ThemedButton type="submit" disabled={isSubmitting} className="!bg-green-600 !text-white">
+                            {isSubmitting ? "Procesando..." : "Confirmar Pago"}
                         </ThemedButton>
                     </div>
                 </form>

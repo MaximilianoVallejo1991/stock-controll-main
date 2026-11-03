@@ -24,6 +24,7 @@ const CurrentAccountDetails = () => {
     const [message, setMessage] = useState({ isOpen: false, text: "", type: "info" });
     const [isConfirmCloseOpen, setIsConfirmCloseOpen] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [isRegisteringPayment, setIsRegisteringPayment] = useState(false);
     const user = useUserStore((state) => state.user);
     const simulatedRole = useUserStore((state) => state.simulatedRole);
     const currentRole = (simulatedRole || user?.role)?.toUpperCase();
@@ -63,6 +64,8 @@ const CurrentAccountDetails = () => {
     };
 
     const handleRegisterPayment = async (paymentData) => {
+        if (isRegisteringPayment) return;
+        setIsRegisteringPayment(true);
         setIsPaymentModalOpen(false);
         try {
             await axios.post("/api/accounts/payment", {
@@ -77,6 +80,8 @@ const CurrentAccountDetails = () => {
                 text: err.response?.data?.message || "No se pudo registrar el pago.",
                 type: "error"
             });
+        } finally {
+            setIsRegisteringPayment(false);
         }
     };
 
