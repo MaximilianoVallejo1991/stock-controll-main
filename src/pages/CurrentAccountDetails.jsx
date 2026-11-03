@@ -10,6 +10,7 @@ import { FaArrowLeft, FaBan, FaCheckCircle, FaPrint } from "react-icons/fa";
 import MessageModal from "../components/Modals/MessageModal";
 import ConfirmModal from "../components/Modals/ConfirmModal";
 import RegisterPaymentModal from "../components/Modals/RegisterPaymentModal";
+import CashRegisterClosedModal, { CASH_REGISTER_RECOVERY_CODES } from "../components/Modals/CashRegisterClosedModal";
 import { FaFileInvoiceDollar, FaDollarSign } from "react-icons/fa";
 import useUserStore from "../store/userStore";
 import { ROLES } from "../constants/roles";
@@ -25,6 +26,9 @@ const CurrentAccountDetails = () => {
     const [isConfirmCloseOpen, setIsConfirmCloseOpen] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [isRegisteringPayment, setIsRegisteringPayment] = useState(false);
+    // 409 with a recognized `code` on the CC-payment cash binding (register closed mid-confirm)
+    // → shown via CashRegisterClosedModal instead of the generic MessageModal error.
+    const [registerClosedError, setRegisterClosedError] = useState(null);
     const user = useUserStore((state) => state.user);
     const simulatedRole = useUserStore((state) => state.simulatedRole);
     const currentRole = (simulatedRole || user?.role)?.toUpperCase();
@@ -75,11 +79,16 @@ const CurrentAccountDetails = () => {
             setMessage({ isOpen: true, text: "Pago registrado exitosamente.", type: "success" });
             fetchAccountData(); // Recargar saldo y movimientos
         } catch (err) {
-            setMessage({
-                isOpen: true,
-                text: err.response?.data?.message || "No se pudo registrar el pago.",
-                type: "error"
-            });
+            const code = err.response?.data?.code;
+            if (code && CASH_REGISTER_RECOVERY_CODES.includes(code)) {
+                setRegisterClosedError({ code, message: err.response?.data?.message });
+            } else {
+                setMessage({
+                    isOpen: true,
+                    text: err.response?.data?.message || "No se pudo registrar el pago.",
+                    type: "error"
+                });
+            }
         } finally {
             setIsRegisteringPayment(false);
         }
@@ -289,6 +298,17 @@ const CurrentAccountDetails = () => {
                 onClose={() => setIsPaymentModalOpen(false)}
                 onConfirm={handleRegisterPayment}
                 currentBalance={account.balance}
+            />
+
+            <CashRegisterClosedModal
+                isOpen={registerClosedError !== null}
+                code={registerClosedError?.code}
+                message={registerClosedError?.message}
+                onClose={() => setRegisterClosedError(null)}
+                onAction={() => {
+                    setRegisterClosedError(null);
+                    navigate("/sells?tab=register");
+                }}
             />
         </div>
     );

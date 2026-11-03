@@ -3,6 +3,7 @@ import axios from "axios";
 import { useTheme } from "../../context/ThemeContext";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import ConfirmModal from "../../components/Modals/ConfirmModal"; // IMPORT MODAL
+import CashRegisterClosedModal, { CASH_REGISTER_RECOVERY_CODES } from "../../components/Modals/CashRegisterClosedModal";
 import { formatCurrency } from "../../utils/currency";
 import { parseCurrency } from "../../utils/currency";
 
@@ -35,6 +36,11 @@ const CashRegister = ({ onGoToPOS }) => {
     const [movAmountDisplay, setMovAmountDisplay] = useState("");
     const [movDescription, setMovDescription] = useState("");
     const [showMovementConfirm, setShowMovementConfirm] = useState(false); // MODAL STATE
+
+    // 409 with a recognized `code` on open/close/movement (register already open/closed, or
+    // closed mid-confirm) → shown via CashRegisterClosedModal. We're already on the register
+    // tab here, so the recovery action for all three codes is simply a refetch (task 6.4).
+    const [registerClosedError, setRegisterClosedError] = useState(null);
 
     const leftColRef = useRef(null);
     const rightColRef = useRef(null);
@@ -192,7 +198,14 @@ const CashRegister = ({ onGoToPOS }) => {
             setIsCajaExpanded(false); // Colapsar el panel al abrir exitosamente
             await fetchData();
         } catch (err) {
-            setError(err.response?.data?.message || err.message);
+            const code = err.response?.data?.code;
+            if (code && CASH_REGISTER_RECOVERY_CODES.includes(code)) {
+                setShowOpenConfirm(false);
+                setPassword("");
+                setRegisterClosedError({ code, message: err.response?.data?.message });
+            } else {
+                setError(err.response?.data?.message || err.message);
+            }
         } finally {
             setIsProcessing(false);
         }
@@ -246,7 +259,15 @@ const CashRegister = ({ onGoToPOS }) => {
             setShowCloseConfirm(false);
             await fetchData();
         } catch (err) {
-            setError(err.response?.data?.message || err.message);
+            const code = err.response?.data?.code;
+            if (code && CASH_REGISTER_RECOVERY_CODES.includes(code)) {
+                setShowCloseConfirm(false);
+                setPassword("");
+                setObservation("");
+                setRegisterClosedError({ code, message: err.response?.data?.message });
+            } else {
+                setError(err.response?.data?.message || err.message);
+            }
         } finally {
             setIsProcessing(false);
         }
@@ -275,7 +296,12 @@ const CashRegister = ({ onGoToPOS }) => {
             setError("");
             await fetchData();
         } catch (err) {
-            setError(err.response?.data?.message || err.message);
+            const code = err.response?.data?.code;
+            if (code && CASH_REGISTER_RECOVERY_CODES.includes(code)) {
+                setRegisterClosedError({ code, message: err.response?.data?.message });
+            } else {
+                setError(err.response?.data?.message || err.message);
+            }
         } finally {
             setIsProcessing(false);
         }
@@ -373,6 +399,17 @@ const CashRegister = ({ onGoToPOS }) => {
                     Motivo: {movDescription}
                 </div>
             </ConfirmModal>
+
+            <CashRegisterClosedModal
+                isOpen={registerClosedError !== null}
+                code={registerClosedError?.code}
+                message={registerClosedError?.message}
+                onClose={() => setRegisterClosedError(null)}
+                onAction={() => {
+                    setRegisterClosedError(null);
+                    fetchData();
+                }}
+            />
 
             {/* LEFT COLUMN: Open/Close & Controls */}
             <div className={`h-full flex flex-col relative overflow-hidden pr-2 ${activeTab !== 'gestion' ? 'hidden lg:flex' : 'flex'}`}>

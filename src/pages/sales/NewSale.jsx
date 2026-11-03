@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { formatCurrency } from "../../utils/currency";
 import { FaChevronUp, FaChevronDown, FaSearchPlus, FaFileInvoiceDollar, FaShoppingCart, FaUsers, FaCheck } from "react-icons/fa";
 import Modal from "../../components/Modals/Modal";
+import CashRegisterClosedModal, { CASH_REGISTER_RECOVERY_CODES } from "../../components/Modals/CashRegisterClosedModal";
 import { useRef } from "react";
 
 const NewSale = () => {
@@ -63,6 +64,9 @@ const NewSale = () => {
   // breakdown confirmado por el modal (se usa solo para processSale)
   const [confirmedBreakdown, setConfirmedBreakdown] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  // 409 with a recognized `code` on sale-create (register closed/already-closed mid-confirm)
+  // → shown via CashRegisterClosedModal instead of the blind alert(). null = not showing.
+  const [registerClosedError, setRegisterClosedError] = useState(null);
 
   useEffect(() => {
     // Si cambia el carrito, invalidamos el preview de descuentos para forzar un recálculo si deciden confirmar.
@@ -357,7 +361,12 @@ const NewSale = () => {
       }
     } catch (error) {
       console.error("Sale error:", error);
-      alert("Ocurrió un error al procesar la venta: " + (error.response?.data?.message || error.message));
+      const code = error.response?.data?.code;
+      if (code && CASH_REGISTER_RECOVERY_CODES.includes(code)) {
+        setRegisterClosedError({ code, message: error.response?.data?.message });
+      } else {
+        alert("Ocurrió un error al procesar la venta: " + (error.response?.data?.message || error.message));
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -794,6 +803,17 @@ const NewSale = () => {
         isOpen={currentSale !== null}
         onClose={() => setCurrentSale(null)}
         saleData={currentSale}
+      />
+
+      <CashRegisterClosedModal
+        isOpen={registerClosedError !== null}
+        code={registerClosedError?.code}
+        message={registerClosedError?.message}
+        onClose={() => setRegisterClosedError(null)}
+        onAction={() => {
+          setRegisterClosedError(null);
+          navigate("/sells?tab=register");
+        }}
       />
 
       {/* OVERLAY DE PROCESAMIENTO PREMIUM */}
