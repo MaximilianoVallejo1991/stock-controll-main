@@ -14,6 +14,7 @@ const CashRegister = ({ onGoToPOS }) => {
     const [amount, setAmount] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [isProcessing, setIsProcessing] = useState(false);
     const [isCajaExpanded, setIsCajaExpanded] = useState(false);
     const [activeTab, setActiveTab] = useState("gestion"); // NEW: mobile tab state
 
@@ -181,6 +182,8 @@ const CashRegister = ({ onGoToPOS }) => {
 
     const executeOpen = async (e) => {
         if (e) e.preventDefault();
+        if (isProcessing) return;
+        setIsProcessing(true);
         try {
             await axios.post("/api/caja/open", { openingAmount: amount, password });
             setAmount("");
@@ -190,6 +193,8 @@ const CashRegister = ({ onGoToPOS }) => {
             await fetchData();
         } catch (err) {
             setError(err.response?.data?.message || err.message);
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -222,11 +227,13 @@ const CashRegister = ({ onGoToPOS }) => {
 
     const executeClose = async (e) => {
         if (e) e.preventDefault();
+        if (isProcessing) return;
         if (Math.abs(calculatedDiff) > 0.01 && !observation.trim()) {
             setError("La observación es obligatoria porque la caja no cuadra.");
             return;
         }
 
+        setIsProcessing(true);
         try {
             await axios.post("/api/caja/close", {
                 closingAmount: amount,
@@ -240,6 +247,8 @@ const CashRegister = ({ onGoToPOS }) => {
             await fetchData();
         } catch (err) {
             setError(err.response?.data?.message || err.message);
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -249,6 +258,12 @@ const CashRegister = ({ onGoToPOS }) => {
     };
 
     const executeMovement = async () => {
+        if (isProcessing) return;
+        // Cierra el ConfirmModal ANTES de esperar la respuesta (igual que PaymentForm.jsx's
+        // confirmPayment) — si se dejara abierto durante el await, su botón "Confirmar" queda
+        // clickeable durante todo el request y permite un doble envío.
+        setShowMovementConfirm(false);
+        setIsProcessing(true);
         try {
             await axios.post("/api/movimientos", {
                 type: movType,
@@ -258,11 +273,11 @@ const CashRegister = ({ onGoToPOS }) => {
             setMovAmount("");
             setMovDescription("");
             setError("");
-            setShowMovementConfirm(false);
             await fetchData();
         } catch (err) {
             setError(err.response?.data?.message || err.message);
-            setShowMovementConfirm(false);
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -306,7 +321,7 @@ const CashRegister = ({ onGoToPOS }) => {
                         </div>
                         <div className="flex justify-end gap-3">
                             <button type="button" onClick={() => { setShowOpenConfirm(false); setPassword(""); setError(""); }} className="px-4 py-2 rounded font-bold opacity-80 hover:bg-black/10 dark:hover:bg-white/10 transition-colors">Cancelar</button>
-                            <button type="submit" className="px-5 py-2 rounded font-bold text-white shadow-md active:scale-95 transition-transform" style={{ backgroundColor: theme.success }}>Abrir Caja</button>
+                            <button type="submit" disabled={isProcessing} className="px-5 py-2 rounded font-bold text-white shadow-md active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100" style={{ backgroundColor: theme.success }}>{isProcessing ? "Abriendo..." : "Abrir Caja"}</button>
                         </div>
                     </form>
                 </div>
@@ -342,7 +357,7 @@ const CashRegister = ({ onGoToPOS }) => {
 
                         <div className="flex justify-end gap-3">
                             <button type="button" onClick={() => { setShowCloseConfirm(false); setPassword(""); setError(""); setObservation(""); }} className="px-4 py-2 rounded font-bold opacity-80 hover:bg-black/10 dark:hover:bg-white/10 transition-colors">Cancelar</button>
-                            <button type="submit" className="px-5 py-2 rounded font-bold text-white shadow-md active:scale-95 transition-transform" style={{ backgroundColor: theme.danger }}>Forzar Cierre</button>
+                            <button type="submit" disabled={isProcessing} className="px-5 py-2 rounded font-bold text-white shadow-md active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100" style={{ backgroundColor: theme.danger }}>{isProcessing ? "Cerrando..." : "Forzar Cierre"}</button>
                         </div>
                     </form>
                 </div>
