@@ -73,9 +73,18 @@ const DiscountSummaryModal = ({
   const isCovered  = !isSplit || (splitBreakdown.length > 0 && Math.abs(totalPaid - finalTotal) < 0.01);
 
   // ── Recibido en efectivo / vuelto (informativo — el backend recalcula) ────
+  // Redondea ambos lados a 2 decimales antes de comparar, igual que el backend
+  // (ver services/salesServices.js `paymentTolerance`/el chequeo de tolerancia
+  // cero) — sin esto, un `amount` con cola de punto flotante por descuentos
+  // (ej. 33.334999999999994) hace que tipear el monto EXACTO sugerido por el
+  // botón "monto exacto" (que ya viene con .toFixed(2)) falle la comparación
+  // cruda, bloqueando justo el camino sin friction que este input existe para dar.
+  const isCashAmountSufficient = (received, amount) =>
+    parseFloat((parseFloat(received) || 0).toFixed(2)) >= parseFloat(amount.toFixed(2));
+
   const isCashReceivedValid = isSplit
-    ? splitBreakdown.every(p => !isCashMethod(p.method) || parseFloat(p.receivedAmount) >= p.amount)
-    : (!isCashMethod(singleMethod) || parseFloat(singleReceived) >= finalTotal);
+    ? splitBreakdown.every(p => !isCashMethod(p.method) || isCashAmountSufficient(p.receivedAmount, p.amount))
+    : (!isCashMethod(singleMethod) || isCashAmountSufficient(singleReceived, finalTotal));
 
   // ── Cuenta Corriente ───────────────────────────────────────────────────────
   const hasCCPayment = activeBreakdown.some(p => p.method === "Cuenta Corriente");
@@ -408,8 +417,7 @@ const DiscountSummaryModal = ({
                 <div className="flex flex-col gap-1.5 max-h-36 overflow-y-auto no-scrollbar">
                   {splitBreakdown.map((p, i) => {
                     const isCash = isCashMethod(p.method);
-                    const received = parseFloat(p.receivedAmount);
-                    const hasValidReceived = !isNaN(received) && received >= p.amount;
+                    const hasValidReceived = isCashAmountSufficient(p.receivedAmount, p.amount);
                     return (
                       <div
                         key={i}
