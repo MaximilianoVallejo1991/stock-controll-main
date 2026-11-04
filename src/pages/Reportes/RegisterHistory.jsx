@@ -243,6 +243,12 @@ export const RegisterHistory = () => {
                                                     <span className="opacity-70">Retiros/Gastos:</span>
                                                     <span className="font-mono text-red-500">-${t.retirosManuales.toFixed(2)}</span>
                                                 </div>
+                                                {(t.vueltosEntregados ?? 0) > 0 && (
+                                                    <div className="flex justify-between text-sm">
+                                                        <span className="opacity-70">Vueltos Entregados:</span>
+                                                        <span className="font-mono" style={{ color: theme.info }}>${t.vueltosEntregados.toFixed(2)}</span>
+                                                    </div>
+                                                )}
 
                                                 <div className="mt-2 pt-2 border-t flex flex-col gap-1" style={{ borderColor: theme.bg3 }}>
                                                     <div className="flex justify-between font-bold">
