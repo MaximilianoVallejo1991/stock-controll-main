@@ -38,10 +38,15 @@ const DiscountSummaryModal = ({
   // ── Estado local de pagos ──────────────────────────────────────────────────
   const [isSplit, setIsSplit] = useState(false);
   const [singleMethod, setSingleMethod] = useState("Efectivo");
+  const [singleReceived, setSingleReceived] = useState(""); // monto recibido en efectivo, modo simple
   const [splitBreakdown, setSplitBreakdown] = useState([]);
   const [newMethod, setNewMethod] = useState("Efectivo");
   const [newAmount, setNewAmount] = useState("");
   const [showConfig, setShowConfig] = useState(false);
+
+  // Un tramo en efectivo requiere `receivedAmount` (regla del backend, espejada acá
+  // solo a fines de UX — el backend valida de nuevo con tolerancia cero).
+  const isCashMethod = (method) => method === "Efectivo";
 
   // ── Valores derivados del preview ─────────────────────────────────────────
   const productsTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
@@ -67,6 +72,11 @@ const DiscountSummaryModal = ({
   const remaining  = Math.max(0, finalTotal - totalPaid);
   const isCovered  = !isSplit || (splitBreakdown.length > 0 && Math.abs(totalPaid - finalTotal) < 0.01);
 
+  // ── Recibido en efectivo / vuelto (informativo — el backend recalcula) ────
+  const isCashReceivedValid = isSplit
+    ? splitBreakdown.every(p => !isCashMethod(p.method) || parseFloat(p.receivedAmount) >= p.amount)
+    : (!isCashMethod(singleMethod) || parseFloat(singleReceived) >= finalTotal);
+
   // ── Cuenta Corriente ───────────────────────────────────────────────────────
   const hasCCPayment = activeBreakdown.some(p => p.method === "Cuenta Corriente");
   const ccAmount     = activeBreakdown.find(p => p.method === "Cuenta Corriente")?.amount || 0;
@@ -77,6 +87,7 @@ const DiscountSummaryModal = ({
     if (isOpen) {
       setIsSplit(false);
       setSingleMethod("Efectivo");
+      setSingleReceived("");
       setSplitBreakdown([]);
       setNewMethod("Efectivo");
       setNewAmount("");
@@ -85,15 +96,23 @@ const DiscountSummaryModal = ({
   }, [isOpen]);
 
   // ── Notificar cambio de pagos al padre (con debounce 300ms) ───────────────
+  // El motor de descuentos solo le importa `method`/`amount`. Proyectamos la
+  // breakdown a esa forma y disparamos el efecto por una firma derivada de esa
+  // proyección — así tipear en `receivedAmount` NUNCA re-dispara el preview de
+  // descuentos (no tiene nada que ver con ese cálculo).
+  const engineBreakdown = activeBreakdown.map(({ method, amount }) => ({ method, amount }));
+  const engineSignature = JSON.stringify(engineBreakdown);
+
   const debounceRef = useRef(null);
   useEffect(() => {
     if (!isOpen) return;
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      onPaymentChange?.(activeBreakdown);
+      onPaymentChange?.(engineBreakdown);
     }, 300);
     return () => clearTimeout(debounceRef.current);
-  }, [singleMethod, splitBreakdown, isSplit, isOpen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engineSignature, isOpen]);
 
   // ── Auto-scroll ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -132,12 +151,20 @@ const DiscountSummaryModal = ({
       }
     }
     const capped = Math.min(amt, remaining > 0 ? remaining : amt);
-    setSplitBreakdown(prev => [...prev, { method: newMethod, amount: capped }]);
+    const newEntry = { method: newMethod, amount: capped };
+    if (isCashMethod(newMethod)) newEntry.receivedAmount = ""; // tramo en efectivo: requiere monto recibido
+    setSplitBreakdown(prev => [...prev, newEntry]);
     setNewAmount("");
   };
 
   const handleUpdatePayment = (idx, method, amount) => {
-    setSplitBreakdown(prev => prev.map((p, i) => i === idx ? { method, amount } : p));
+    // Preservamos el resto de la entrada (p.ej. `receivedAmount`) — reconstruir
+    // desde cero acá borraba lo que el cajero ya había tipeado en ese tramo.
+    setSplitBreakdown(prev => prev.map((p, i) => i === idx ? { ...p, method, amount } : p));
+  };
+
+  const handleUpdateReceivedAmount = (idx, value) => {
+    setSplitBreakdown(prev => prev.map((p, i) => i === idx ? { ...p, receivedAmount: value } : p));
   };
 
   const handleRemovePayment = (idx) => {
@@ -161,9 +188,16 @@ const DiscountSummaryModal = ({
             baseAmount: totalSplitPaid > 0
               ? parseFloat(((p.amount / totalSplitPaid) * productsTotal).toFixed(2))
               : p.amount,
+            // `receivedAmount` viaja como número, solo en tramos de efectivo.
+            ...(isCashMethod(p.method) ? { receivedAmount: parseFloat(p.receivedAmount) || 0 } : {}),
           }));
         })()
-      : [{ method: singleMethod, amount: finalTotal, baseAmount: productsTotal }];
+      : [{
+          method: singleMethod,
+          amount: finalTotal,
+          baseAmount: productsTotal,
+          ...(isCashMethod(singleMethod) ? { receivedAmount: parseFloat(singleReceived) || 0 } : {}),
+        }];
     onConfirm(confirmBreakdown);
   };
 
@@ -330,39 +364,116 @@ const DiscountSummaryModal = ({
                     ⚠️ Generando deuda al cliente
                   </span>
                 )}
+                {isCashMethod(singleMethod) && (
+                  <div className="flex flex-col gap-1 mt-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] uppercase opacity-60 font-bold flex-shrink-0">Recibido</span>
+                      <div className="flex-1 relative flex items-center">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={singleReceived}
+                          onChange={e => setSingleReceived(e.target.value)}
+                          placeholder={finalTotal.toFixed(2)}
+                          className="w-full p-2 pr-8 rounded-xl outline-none text-xs font-mono border-2 focus:border-blue-500"
+                          style={{
+                            backgroundColor: theme.bgcards,
+                            color: theme.text,
+                            borderColor: isCashReceivedValid ? theme.border : theme.danger
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setSingleReceived(finalTotal.toFixed(2))}
+                          className="absolute right-1 p-1 text-blue-500"
+                          title="Monto exacto"
+                        >
+                          <FaMagic size={10} />
+                        </button>
+                      </div>
+                    </div>
+                    {singleReceived !== "" && (
+                      <span className="text-[10px] text-right opacity-70">
+                        Vuelto: {formatCurrency(Math.max(0, (parseFloat(singleReceived) || 0) - finalTotal))}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               /* Modo Combinado */
               <div className="flex flex-col gap-2">
                 {/* Lista de pagos */}
                 <div className="flex flex-col gap-1.5 max-h-36 overflow-y-auto no-scrollbar">
-                  {splitBreakdown.map((p, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold shadow-sm"
-                      style={{ backgroundColor: theme.bgcards, border: `1px solid ${theme.border}` }}
-                    >
-                      <span className="opacity-80">{p.method}</span>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          value={p.amount}
-                          step="0.01"
-                          className="w-24 rounded px-2 py-0.5 font-mono text-right outline-none focus:ring-1 ring-blue-500"
-                          style={{ backgroundColor: theme.bg, color: theme.text }}
-                          onChange={e => handleUpdatePayment(i, p.method, parseFloat(e.target.value) || 0)}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleRemovePayment(i)}
-                          className="p-1 rounded-full hover:bg-red-500/10 transition-colors"
-                          style={{ color: theme.danger }}
-                        >
-                          <RiCloseLine size={16} />
-                        </button>
+                  {splitBreakdown.map((p, i) => {
+                    const isCash = isCashMethod(p.method);
+                    const received = parseFloat(p.receivedAmount);
+                    const hasValidReceived = !isNaN(received) && received >= p.amount;
+                    return (
+                      <div
+                        key={i}
+                        className="flex flex-col gap-1 px-3 py-2 rounded-xl text-xs font-bold shadow-sm"
+                        style={{ backgroundColor: theme.bgcards, border: `1px solid ${theme.border}` }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="opacity-80">{p.method}</span>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              value={p.amount}
+                              step="0.01"
+                              className="w-24 rounded px-2 py-0.5 font-mono text-right outline-none focus:ring-1 ring-blue-500"
+                              style={{ backgroundColor: theme.bg, color: theme.text }}
+                              onChange={e => handleUpdatePayment(i, p.method, parseFloat(e.target.value) || 0)}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePayment(i)}
+                              className="p-1 rounded-full hover:bg-red-500/10 transition-colors"
+                              style={{ color: theme.danger }}
+                            >
+                              <RiCloseLine size={16} />
+                            </button>
+                          </div>
+                        </div>
+                        {isCash && (
+                          <div className="flex items-center justify-between gap-2 pt-1 border-t border-dashed" style={{ borderColor: theme.border }}>
+                            <span className="opacity-60 text-[10px] uppercase flex-shrink-0">Recibido</span>
+                            <div className="relative flex items-center">
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={p.receivedAmount ?? ""}
+                                onChange={e => handleUpdateReceivedAmount(i, e.target.value)}
+                                placeholder={p.amount.toFixed(2)}
+                                className="w-24 rounded px-2 py-0.5 pr-6 font-mono text-right outline-none focus:ring-1 ring-blue-500"
+                                style={{
+                                  backgroundColor: theme.bg,
+                                  color: theme.text,
+                                  border: `1px solid ${hasValidReceived ? theme.border : theme.danger}`
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateReceivedAmount(i, p.amount.toFixed(2))}
+                                className="absolute right-1 p-1 text-blue-500"
+                                title="Monto exacto"
+                              >
+                                <FaMagic size={10} />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        {isCash && p.receivedAmount !== "" && p.receivedAmount != null && (
+                          <span className="text-[10px] text-right opacity-70">
+                            Vuelto: {formatCurrency(Math.max(0, (parseFloat(p.receivedAmount) || 0) - p.amount))}
+                          </span>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Badge de saldo restante */}
@@ -542,7 +653,7 @@ const DiscountSummaryModal = ({
           </button>
           <button
             onClick={handleConfirm}
-            disabled={isLoading || !isCovered || isProcessing}
+            disabled={isLoading || !isCovered || isProcessing || !isCashReceivedValid}
             className="flex-1 p-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-95 shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
             style={{ backgroundColor: hasCCPayment ? "#ea580c" : theme.primary, color: "white" }}
           >
@@ -556,9 +667,11 @@ const DiscountSummaryModal = ({
                 {hasCCPayment && <FaFileInvoiceDollar size={18} />}
                 {!isCovered
                   ? `Falta ${formatCurrency(remaining)}`
-                  : hasCCPayment
-                    ? (isPureCC ? "Cargar en Cuenta Corriente" : "Confirmar Venta Combinada")
-                    : "Realizar Venta"
+                  : !isCashReceivedValid
+                    ? "Ingresá el monto recibido"
+                    : hasCCPayment
+                      ? (isPureCC ? "Cargar en Cuenta Corriente" : "Confirmar Venta Combinada")
+                      : "Realizar Venta"
                 }
               </>
             )}
