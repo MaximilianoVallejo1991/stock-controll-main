@@ -391,9 +391,8 @@ const DiscountSummaryModal = ({
                       <span className="text-[10px] uppercase opacity-60 font-bold flex-shrink-0">Recibido</span>
                       <div className="flex-1 relative flex items-center">
                         <input
-                          type="number"
-                          min="0"
-                          step="0.01"
+                          type="text"
+                          inputMode="decimal"
                           value={singleReceived}
                           onChange={e => setSingleReceived(e.target.value)}
                           placeholder={finalTotal.toFixed(2)}
@@ -462,9 +461,8 @@ const DiscountSummaryModal = ({
                             <span className="opacity-60 text-[10px] uppercase flex-shrink-0">Recibido</span>
                             <div className="relative flex items-center">
                               <input
-                                type="number"
-                                min="0"
-                                step="0.01"
+                                type="text"
+                                inputMode="decimal"
                                 value={p.receivedAmount ?? ""}
                                 onChange={e => handleUpdateReceivedAmount(i, e.target.value)}
                                 placeholder={p.amount.toFixed(2)}
