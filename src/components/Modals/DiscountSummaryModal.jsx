@@ -1,7 +1,7 @@
 // DiscountSummaryModal.jsx — Estación de Cierre de Venta
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useTheme } from "../../context/ThemeContext";
-import { formatCurrency } from "../../utils/currency";
+import { formatCurrency, parseCurrency } from "../../utils/currency";
 import {
   FaTimes, FaShoppingCart, FaChevronDown, FaChevronUp,
   FaFileInvoiceDollar, FaPlus, FaMagic, FaCheck
@@ -79,8 +79,17 @@ const DiscountSummaryModal = ({
   // (ej. 33.334999999999994) hace que tipear el monto EXACTO sugerido por el
   // botón "monto exacto" (que ya viene con .toFixed(2)) falle la comparación
   // cruda, bloqueando justo el camino sin friction que este input existe para dar.
+  // `amount` se fuerza con Number(...) por si llega como string (ya pasaba con
+  // otros campos monetarios de la preview, ver formatCurrency) y `received` se
+  // parsea con parseCurrency (no parseFloat) para aceptar coma decimal, igual
+  // que el resto de los inputs de monto de esta app.
+  const roundMoney = (value) => Math.round((Number(value) || 0) * 100) / 100;
+
   const isCashAmountSufficient = (received, amount) =>
-    parseFloat((parseFloat(received) || 0).toFixed(2)) >= parseFloat(amount.toFixed(2));
+    roundMoney(parseCurrency(received)) >= roundMoney(amount);
+
+  const cashChangeDue = (received, amount) =>
+    Math.max(0, roundMoney(roundMoney(parseCurrency(received)) - roundMoney(amount)));
 
   const isCashReceivedValid = isSplit
     ? splitBreakdown.every(p => !isCashMethod(p.method) || isCashAmountSufficient(p.receivedAmount, p.amount))
@@ -181,7 +190,7 @@ const DiscountSummaryModal = ({
   };
 
   const handleConfirm = () => {
-    if (!isCovered) return;
+    if (!isCovered || !isCashReceivedValid) return;
     // Adjuntamos baseAmount = porción del subtotal BRUTO que corresponde a cada
     // medio de pago. El evaluador del backend usa baseAmount (cuando existe) para
     // calcular el descuento sobre el precio original, evitando la referencia circular
@@ -197,15 +206,18 @@ const DiscountSummaryModal = ({
             baseAmount: totalSplitPaid > 0
               ? parseFloat(((p.amount / totalSplitPaid) * productsTotal).toFixed(2))
               : p.amount,
-            // `receivedAmount` viaja como número, solo en tramos de efectivo.
-            ...(isCashMethod(p.method) ? { receivedAmount: parseFloat(p.receivedAmount) || 0 } : {}),
+            // `receivedAmount` viaja como número SOLO en tramos de efectivo —
+            // se fuerza explícitamente a null en el resto para no arrastrar un
+            // valor viejo si la pata cambió de método (hoy no hay selector de
+            // método por fila, pero esto no debe depender de que siga sin haberlo).
+            receivedAmount: isCashMethod(p.method) ? (parseCurrency(p.receivedAmount) || 0) : null,
           }));
         })()
       : [{
           method: singleMethod,
           amount: finalTotal,
           baseAmount: productsTotal,
-          ...(isCashMethod(singleMethod) ? { receivedAmount: parseFloat(singleReceived) || 0 } : {}),
+          ...(isCashMethod(singleMethod) ? { receivedAmount: parseCurrency(singleReceived) || 0 } : {}),
         }];
     onConfirm(confirmBreakdown);
   };
@@ -404,7 +416,7 @@ const DiscountSummaryModal = ({
                     </div>
                     {singleReceived !== "" && (
                       <span className="text-[10px] text-right opacity-70">
-                        Vuelto: {formatCurrency(Math.max(0, (parseFloat(singleReceived) || 0) - finalTotal))}
+                        Vuelto: {formatCurrency(cashChangeDue(singleReceived, finalTotal))}
                       </span>
                     )}
                   </div>
@@ -476,7 +488,7 @@ const DiscountSummaryModal = ({
                         )}
                         {isCash && p.receivedAmount !== "" && p.receivedAmount != null && (
                           <span className="text-[10px] text-right opacity-70">
-                            Vuelto: {formatCurrency(Math.max(0, (parseFloat(p.receivedAmount) || 0) - p.amount))}
+                            Vuelto: {formatCurrency(cashChangeDue(p.receivedAmount, p.amount))}
                           </span>
                         )}
                       </div>

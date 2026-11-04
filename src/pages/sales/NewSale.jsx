@@ -61,7 +61,9 @@ const NewSale = () => {
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
   const [isClientExpanded, setIsClientExpanded] = useState(false);
-  // breakdown confirmado por el modal (se usa solo para processSale)
+  // breakdown confirmado por el modal, SIN receivedAmount/baseAmount — se usa
+  // para re-pedir el preview de descuentos al cambiar reglas preferidas/excluidas,
+  // no para processSale (esa recibe el breakdown final directo del modal).
   const [confirmedBreakdown, setConfirmedBreakdown] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   // 409 with a recognized `code` on sale-create (register closed/already-closed mid-confirm)
