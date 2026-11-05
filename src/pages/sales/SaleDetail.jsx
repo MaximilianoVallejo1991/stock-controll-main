@@ -273,12 +273,21 @@ export const SaleDetail = ({ isOpen, onClose, saleData, onCancelSuccess }) => {
           <div className="mb-4 text-sm">
             <span className="font-medium">Métodos de Pago: </span>
             {saleData.orderPayments && saleData.orderPayments.length > 1 ? (
-              saleData.orderPayments.map((p, idx) => (
-                <span key={idx}>
-                  {idx > 0 ? ", " : ""}
-                  {p.paymentMethod || p.method} {formatCurrency(p.amount)}
-                </span>
-              ))
+              <div className="mt-1 flex flex-col gap-1">
+                {saleData.orderPayments.map((p, idx) => (
+                  <div key={idx} className="flex flex-col">
+                    <span>
+                      {p.paymentMethod || p.method} {formatCurrency(p.amount)}
+                    </span>
+                    {p.changeAmount > 0 && p.receivedAmount != null && (
+                      <span className="text-xs mt-0.5 opacity-70">
+                        Recibido: {formatCurrency(p.receivedAmount)} · Vuelto:{" "}
+                        {formatCurrency(p.changeAmount)}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
             ) : (
               <span>
                 {saleData.orderPayments?.[0]?.paymentMethod ||
@@ -286,6 +295,13 @@ export const SaleDetail = ({ isOpen, onClose, saleData, onCancelSuccess }) => {
                   saleData.paymentMethod ||
                   "Efectivo"}{" "}
                 {formatCurrency(finalTotal)}
+                {saleData.orderPayments?.[0]?.changeAmount > 0 &&
+                  saleData.orderPayments[0].receivedAmount != null && (
+                  <span className="block text-xs mt-1 opacity-70">
+                    Recibido: {formatCurrency(saleData.orderPayments[0].receivedAmount)} ·
+                    Vuelto: {formatCurrency(saleData.orderPayments[0].changeAmount)}
+                  </span>
+                )}
               </span>
             )}
           </div>

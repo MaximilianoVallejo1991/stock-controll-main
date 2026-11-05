@@ -349,6 +349,9 @@ const NewSale = () => {
         clearPos();
         setConfirmedBreakdown([]);
         setDiscountPreview(null);
+        // response.data already carries the server-computed `change` (sum of all cash-leg
+        // changeAmount) and enriched `orderPayments` with receivedAmount/changeAmount per cash
+        // leg — SaleDetail renders them directly, no client-side recomputation needed here.
         setCurrentSale({ ...response.data, items: cart });
 
         axios.get('/api/products').then(res => {

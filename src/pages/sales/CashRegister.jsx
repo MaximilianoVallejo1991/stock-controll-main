@@ -11,6 +11,9 @@ const CashRegister = ({ onGoToPOS }) => {
     const { theme } = useTheme();
     const [currentRegister, setCurrentRegister] = useState(null);
     const [history, setHistory] = useState([]);
+    // Agregado del turno (vueltos entregados, etc.) — viene de `getRegisterHistory`'s `totals`,
+    // separado de `history` (los items). Informativo: NO entra en el cálculo de `fisico`.
+    const [shiftTotals, setShiftTotals] = useState(null);
     const [loading, setLoading] = useState(true);
     const [amount, setAmount] = useState("");
     const [password, setPassword] = useState("");
@@ -124,9 +127,12 @@ const CashRegister = ({ onGoToPOS }) => {
 
             if (res.data) {
                 const histRes = await axios.get("/api/caja/history");
-                setHistory(histRes.data);
+                // `getRegisterHistory` now returns `{ items, totals }` instead of a bare array.
+                setHistory(histRes.data.items ?? []);
+                setShiftTotals(histRes.data.totals ?? null);
             } else {
                 setHistory([]);
+                setShiftTotals(null);
             }
             setError("");
         } catch (err) {
@@ -692,17 +698,25 @@ const CashRegister = ({ onGoToPOS }) => {
                                                     {item.orderPayments.map((p, pIdx) => (
                                                         <div
                                                             key={pIdx}
-                                                            className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs"
+                                                            className="flex flex-col gap-0.5 px-2.5 py-1.5 rounded-lg text-xs"
                                                             style={{ backgroundColor: theme.bg, borderLeft: `3px solid ${theme.info}40` }}
                                                         >
-                                                            <span className="flex items-center gap-1.5 font-medium opacity-80">
-                                                                <span>{methodIcon(p.paymentMethod)}</span>
-                                                                <span>{methodLabel(p.paymentMethod)}</span>
-                                                            </span>
-                                                            <span className="font-mono font-bold" style={{ color: p.paymentMethod?.toLowerCase() === 'cuenta_corriente' ? '#f97316' : theme.success }}>
-                                                                {p.paymentMethod?.toLowerCase() === 'cuenta_corriente' ? '📒 ' : '+'}
-                                                                {formatCurrency(p.amount)}
-                                                            </span>
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="flex items-center gap-1.5 font-medium opacity-80">
+                                                                    <span>{methodIcon(p.paymentMethod)}</span>
+                                                                    <span>{methodLabel(p.paymentMethod)}</span>
+                                                                </span>
+                                                                <span className="font-mono font-bold" style={{ color: p.paymentMethod?.toLowerCase() === 'cuenta_corriente' ? '#f97316' : theme.success }}>
+                                                                    {p.paymentMethod?.toLowerCase() === 'cuenta_corriente' ? '📒 ' : '+'}
+                                                                    {formatCurrency(p.amount)}
+                                                                </span>
+                                                            </div>
+                                                            {p.changeAmount > 0 && (
+                                                                <div className="flex justify-between opacity-70 pl-5">
+                                                                    <span>Vuelto</span>
+                                                                    <span className="font-mono">{formatCurrency(p.changeAmount)}</span>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     ))}
                                                 </div>
@@ -735,6 +749,11 @@ const CashRegister = ({ onGoToPOS }) => {
                                                     </span>
                                                 </div>
                                                 <p className="opacity-70 mt-1 truncate text-xs md:text-sm" title={desc}>{desc}</p>
+                                                {isOrder && !isCancelled && item.orderPayments?.[0]?.changeAmount > 0 && (
+                                                    <p className="opacity-60 mt-0.5 text-[10px] md:text-xs">
+                                                        Vuelto: {formatCurrency(item.orderPayments[0].changeAmount)}
+                                                    </p>
+                                                )}
                                             </div>
                                             <div className="flex flex-col items-end text-[10px] md:text-xs opacity-60 ml-2 border-l pl-2 min-w-[70px] md:min-w-[80px]" style={{ borderColor: theme.bg3 }}>
                                                 <span className="font-semibold">{timeStr}</span>
@@ -783,43 +802,54 @@ const CashRegister = ({ onGoToPOS }) => {
 
             {/* REAL-TIME TOTALS FOOTER */}
             {currentRegister && (
-                <div className="fixed lg:absolute bottom-4 left-4 right-4 lg:bottom-6 lg:right-6 lg:left-auto lg:w-[calc(50%-1.5rem)] p-3 rounded-xl border shadow-2xl z-40 grid grid-cols-3 gap-2 animate-in slide-in-from-bottom-4 duration-300" style={{ borderColor: theme.bg3, backgroundColor: theme.bgcards }}>
+                <div className="fixed lg:absolute bottom-4 left-4 right-4 lg:bottom-6 lg:right-6 lg:left-auto lg:w-[calc(50%-1.5rem)] p-3 rounded-xl border shadow-2xl z-40 flex flex-col gap-2 animate-in slide-in-from-bottom-4 duration-300" style={{ borderColor: theme.bg3, backgroundColor: theme.bgcards }}>
 
-                    {(() => {
-                        let fisico = currentRegister.openingAmount;
-                        let transferencias = 0;
-                        let tarjetas = 0;
+                    <div className="grid grid-cols-3 gap-2">
+                        {(() => {
+                            let fisico = currentRegister.openingAmount;
+                            let transferencias = 0;
+                            let tarjetas = 0;
 
-                        // getOrderTotals desglosa ventas COMBINADAS usando orderPayments
-                        history.forEach(item => {
-                            if (item._typeModel === 'ORDER') {
-                                const t = getOrderTotals(item);
-                                fisico        += t.efectivo;
-                                transferencias += t.transferencia;
-                                tarjetas       += t.tarjeta;
-                            } else {
-                                if (item.type === 'INCOME') fisico += item.amount;
-                                else if (item.type === 'EXPENSE') fisico -= item.amount;
-                            }
-                        });
+                            // getOrderTotals desglosa ventas COMBINADAS usando orderPayments
+                            history.forEach(item => {
+                                if (item._typeModel === 'ORDER') {
+                                    const t = getOrderTotals(item);
+                                    fisico        += t.efectivo;
+                                    transferencias += t.transferencia;
+                                    tarjetas       += t.tarjeta;
+                                } else {
+                                    if (item.type === 'INCOME') fisico += item.amount;
+                                    else if (item.type === 'EXPENSE') fisico -= item.amount;
+                                }
+                            });
 
-                        return (
-                            <>
-                                <div className="flex flex-col items-center justify-center border-r" style={{ borderColor: theme.bg3 }}>
-                                    <span className="text-[9px] md:text-[10px] font-bold opacity-60 uppercase mb-0.5 md:mb-1 flex items-center gap-1 text-green-500 shrink-0">💵 <span className="hidden xs:inline">Efectivo</span></span>
-                                    <span className="font-mono font-bold text-xs md:text-base">{formatCurrency(fisico)}</span>
-                                </div>
-                                <div className="flex flex-col items-center justify-center border-r" style={{ borderColor: theme.bg3 }}>
-                                    <span className="text-[9px] md:text-[10px] font-bold opacity-60 uppercase mb-0.5 md:mb-1 flex items-center gap-1 text-blue-500 shrink-0">🏦 <span className="hidden xs:inline">Transf.</span></span>
-                                    <span className="font-mono font-bold text-xs md:text-base">{formatCurrency(transferencias)}</span>
-                                </div>
-                                <div className="flex flex-col items-center justify-center">
-                                    <span className="text-[9px] md:text-[10px] font-bold opacity-60 uppercase mb-0.5 md:mb-1 flex items-center gap-1 text-orange-500 shrink-0">💳 <span className="hidden xs:inline">Tarjeta</span></span>
-                                    <span className="font-mono font-bold text-xs md:text-base">{formatCurrency(tarjetas)}</span>
-                                </div>
-                            </>
-                        );
-                    })()}
+                            return (
+                                <>
+                                    <div className="flex flex-col items-center justify-center border-r" style={{ borderColor: theme.bg3 }}>
+                                        <span className="text-[9px] md:text-[10px] font-bold opacity-60 uppercase mb-0.5 md:mb-1 flex items-center gap-1 text-green-500 shrink-0">💵 <span className="hidden xs:inline">Efectivo</span></span>
+                                        <span className="font-mono font-bold text-xs md:text-base">{formatCurrency(fisico)}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center justify-center border-r" style={{ borderColor: theme.bg3 }}>
+                                        <span className="text-[9px] md:text-[10px] font-bold opacity-60 uppercase mb-0.5 md:mb-1 flex items-center gap-1 text-blue-500 shrink-0">🏦 <span className="hidden xs:inline">Transf.</span></span>
+                                        <span className="font-mono font-bold text-xs md:text-base">{formatCurrency(transferencias)}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center justify-center">
+                                        <span className="text-[9px] md:text-[10px] font-bold opacity-60 uppercase mb-0.5 md:mb-1 flex items-center gap-1 text-orange-500 shrink-0">💳 <span className="hidden xs:inline">Tarjeta</span></span>
+                                        <span className="font-mono font-bold text-xs md:text-base">{formatCurrency(tarjetas)}</span>
+                                    </div>
+                                </>
+                            );
+                        })()}
+                    </div>
+
+                    {/* Informativo: vueltos entregados en el turno. NO participa del cálculo de
+                        `fisico` arriba — ese cálculo sigue byte-idéntico. */}
+                    {shiftTotals && shiftTotals.vueltosEntregados > 0 && (
+                        <div className="flex justify-between items-center text-xs border-t pt-2" style={{ borderColor: theme.bg3 }}>
+                            <span className="font-bold opacity-60 uppercase flex items-center gap-1">🔁 Vueltos entregados</span>
+                            <span className="font-mono font-bold">{formatCurrency(shiftTotals.vueltosEntregados)}</span>
+                        </div>
+                    )}
 
                 </div>
             )}
