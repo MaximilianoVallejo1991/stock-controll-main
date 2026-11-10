@@ -239,9 +239,10 @@ const CurrentAccountDetails = () => {
                             {canManageAccount && account.status === 'OPEN' && (
                                 <ThemedButton
                                     className="!bg-green-600 !text-white !py-1 text-xs flex items-center gap-1"
+                                    disabled={isRegisteringPayment}
                                     onClick={() => setIsPaymentModalOpen(true)}
                                 >
-                                    <FaDollarSign size={10} /> Registrar Pago
+                                    <FaDollarSign size={10} /> {isRegisteringPayment ? "Procesando..." : "Registrar Pago"}
                                 </ThemedButton>
                             )}
                             <ThemedButton
