@@ -10,7 +10,8 @@ import { useNavigate } from "react-router-dom";
 import { formatCurrency } from "../../utils/currency";
 import { FaChevronUp, FaChevronDown, FaSearchPlus, FaFileInvoiceDollar, FaShoppingCart, FaUsers, FaCheck } from "react-icons/fa";
 import Modal from "../../components/Modals/Modal";
-import CashRegisterClosedModal, { CASH_REGISTER_RECOVERY_CODES } from "../../components/Modals/CashRegisterClosedModal";
+import CashRegisterClosedModal from "../../components/Modals/CashRegisterClosedModal";
+import { useCashRegisterRecovery } from "../../hooks/useCashRegisterRecovery";
 import { useRef } from "react";
 
 const NewSale = () => {
@@ -68,7 +69,7 @@ const NewSale = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   // 409 with a recognized `code` on sale-create (register closed/already-closed mid-confirm)
   // → shown via CashRegisterClosedModal instead of the blind alert(). null = not showing.
-  const [registerClosedError, setRegisterClosedError] = useState(null);
+  const { registerClosedError, setRegisterClosedError, handleRecoveryError } = useCashRegisterRecovery();
 
   useEffect(() => {
     // Si cambia el carrito, invalidamos el preview de descuentos para forzar un recálculo si deciden confirmar.
@@ -366,9 +367,8 @@ const NewSale = () => {
       }
     } catch (error) {
       console.error("Sale error:", error);
-      const code = error.response?.data?.code;
-      if (code && CASH_REGISTER_RECOVERY_CODES.includes(code)) {
-        setRegisterClosedError({ code, message: error.response?.data?.message });
+      if (handleRecoveryError(error)) {
+        // no-op, filled in next commit
       } else {
         alert("Ocurrió un error al procesar la venta: " + (error.response?.data?.message || error.message));
       }

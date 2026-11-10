@@ -10,10 +10,11 @@ import { FaArrowLeft, FaBan, FaCheckCircle, FaPrint } from "react-icons/fa";
 import MessageModal from "../components/Modals/MessageModal";
 import ConfirmModal from "../components/Modals/ConfirmModal";
 import RegisterPaymentModal from "../components/Modals/RegisterPaymentModal";
-import CashRegisterClosedModal, { CASH_REGISTER_RECOVERY_CODES } from "../components/Modals/CashRegisterClosedModal";
+import CashRegisterClosedModal from "../components/Modals/CashRegisterClosedModal";
 import { FaFileInvoiceDollar, FaDollarSign } from "react-icons/fa";
 import useUserStore from "../store/userStore";
 import { ROLES } from "../constants/roles";
+import { useCashRegisterRecovery } from "../hooks/useCashRegisterRecovery";
 
 
 const CurrentAccountDetails = () => {
@@ -28,7 +29,7 @@ const CurrentAccountDetails = () => {
     const [isRegisteringPayment, setIsRegisteringPayment] = useState(false);
     // 409 with a recognized `code` on the CC-payment cash binding (register closed mid-confirm)
     // → shown via CashRegisterClosedModal instead of the generic MessageModal error.
-    const [registerClosedError, setRegisterClosedError] = useState(null);
+    const { registerClosedError, setRegisterClosedError, handleRecoveryError } = useCashRegisterRecovery();
     const user = useUserStore((state) => state.user);
     const simulatedRole = useUserStore((state) => state.simulatedRole);
     const currentRole = (simulatedRole || user?.role)?.toUpperCase();
@@ -79,10 +80,7 @@ const CurrentAccountDetails = () => {
             setMessage({ isOpen: true, text: "Pago registrado exitosamente.", type: "success" });
             fetchAccountData(); // Recargar saldo y movimientos
         } catch (err) {
-            const code = err.response?.data?.code;
-            if (code && CASH_REGISTER_RECOVERY_CODES.includes(code)) {
-                setRegisterClosedError({ code, message: err.response?.data?.message });
-            } else {
+            if (!handleRecoveryError(err)) {
                 setMessage({
                     isOpen: true,
                     text: err.response?.data?.message || "No se pudo registrar el pago.",
