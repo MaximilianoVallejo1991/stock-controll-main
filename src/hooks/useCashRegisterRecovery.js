@@ -23,7 +23,6 @@ export const useCashRegisterRecovery = () => {
     return {
         registerClosedError,
         setRegisterClosedError,
-        isRecoveryCode,
         handleRecoveryError
     };
 };
