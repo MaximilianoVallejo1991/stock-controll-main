@@ -285,6 +285,7 @@ const CashRegister = ({ onGoToPOS }) => {
 
     const handleMovementSubmit = (e) => {
         e.preventDefault();
+        if (isProcessing) return;
         setShowMovementConfirm(true); // TRIGGER MODAL INSTEAD OF WINDOW.CONFIRM
     };
 
@@ -564,8 +565,8 @@ const CashRegister = ({ onGoToPOS }) => {
                                 </div>
 
 
-                                <button type="submit" className="p-4 mt-1 font-bold rounded-lg text-white shadow-md transition-transform active:scale-95 flex justify-center uppercase tracking-wide w-full" style={{ backgroundColor: movType === 'EXPENSE' ? theme.danger : theme.success }}>
-                                    Registrar Movimiento $
+                                <button type="submit" disabled={isProcessing} className="p-4 mt-1 font-bold rounded-lg text-white shadow-md transition-transform active:scale-95 flex justify-center uppercase tracking-wide w-full disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100" style={{ backgroundColor: movType === 'EXPENSE' ? theme.danger : theme.success }}>
+                                    {isProcessing ? "Procesando..." : "Registrar Movimiento $"}
                                 </button>
                             </form>
                         </div>
