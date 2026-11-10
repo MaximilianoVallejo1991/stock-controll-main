@@ -368,7 +368,9 @@ const NewSale = () => {
     } catch (error) {
       console.error("Sale error:", error);
       if (handleRecoveryError(error)) {
-        // no-op, filled in next commit
+        // Sin esto quedan dos modales abiertos a la vez: el de descuentos (de fondo)
+        // y el de caja cerrada (encima).
+        setIsDiscountModalOpen(false);
       } else {
         alert("Ocurrió un error al procesar la venta: " + (error.response?.data?.message || error.message));
       }
