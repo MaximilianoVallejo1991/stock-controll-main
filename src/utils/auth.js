@@ -11,17 +11,16 @@ export const logoutUser = async () => {
   try {
     const clearUser = useUserStore.getState().clearUser;
 
-    // No-op confirmation call — there is no server-side cookie to clear anymore.
-    try {
-      await axios.post("/api/auth/logout");
-    } catch (backendErr) {
-      console.warn("Backend logout failed, proceeding with frontend logout", backendErr);
-    }
-
     clearTokens();
     clearUser();
     sessionStorage.removeItem("pending-password-setup");
-    
+
+    // No-op confirmation call — no server-side cookie to clear anymore, so
+    // there's nothing to wait for before letting the user go.
+    axios.post("/api/auth/logout").catch((backendErr) => {
+      console.warn("Backend logout failed (frontend already logged out)", backendErr);
+    });
+
     // Forzamos recarga para limpiar cualquier estado residual
     window.location.href = '/';
   } catch (err) {
