@@ -1,5 +1,6 @@
 import axios from "axios";
 import useUserStore from "../store/userStore";
+import { clearTokens } from "./tokenStorage";
 
 export const isAuthenticated = () => {
   const user = useUserStore.getState().user;
@@ -9,14 +10,15 @@ export const isAuthenticated = () => {
 export const logoutUser = async () => {
   try {
     const clearUser = useUserStore.getState().clearUser;
-    
-    // Avisar al backend para limpiar la cookie
+
+    // No-op confirmation call — there is no server-side cookie to clear anymore.
     try {
-      await axios.post("/api/auth/logout"); 
+      await axios.post("/api/auth/logout");
     } catch (backendErr) {
       console.warn("Backend logout failed, proceeding with frontend logout", backendErr);
     }
 
+    clearTokens();
     clearUser();
     sessionStorage.removeItem("pending-password-setup");
     

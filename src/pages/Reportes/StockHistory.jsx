@@ -36,7 +36,6 @@ export const StockHistory = () => {
         try {
             const res = await axios.get("/api/stock-history", {
                 params: { startDate: start, endDate: end },
-                withCredentials: true,
             });
             setHistory(res.data);
         } catch (err) {
@@ -104,7 +103,7 @@ export const StockHistory = () => {
             const saleIdStr = record.description.split("#")[1];
             if (saleIdStr) {
                 try {
-                    const res = await axios.get(`/api/sales/${saleIdStr}`, { withCredentials: true });
+                    const res = await axios.get(`/api/sales/${saleIdStr}`);
                     setSelectedSaleDetail(res.data);
                 } catch (err) {
                     setSelectedAdjustDetail({

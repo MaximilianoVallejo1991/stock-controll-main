@@ -7,6 +7,7 @@ import ThemedButton from "../components/ThemedButton";
 import ThemedInput from "../components/ThemedInput";
 import useUserStore from '../store/userStore';
 import { isAuthenticated } from "../utils/auth";
+import { setToken } from "../utils/tokenStorage";
 
 
 
@@ -71,6 +72,7 @@ const LoginPage = () => {
       });
 
       if (res.data.requiresPasswordChange) {
+        setToken(res.data.setupToken);
         sessionStorage.setItem("pending-password-setup", JSON.stringify({
           email: res.data.user?.email || email
         }));
@@ -83,6 +85,7 @@ const LoginPage = () => {
         return;
       }
 
+      setToken(res.data.token);
       setUser(res.data.user);
 
       navigate("/mainpanel");

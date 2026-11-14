@@ -45,7 +45,6 @@ export const RegisterHistory = () => {
         try {
             const res = await axios.get("/api/caja/registers", {
                 params: { startDate: start, endDate: end },
-                withCredentials: true,
             });
             setRegisters(res.data);
         } catch (err) {

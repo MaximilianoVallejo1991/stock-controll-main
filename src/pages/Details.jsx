@@ -137,7 +137,7 @@ const Details = () => {
 
     axios.put(`/api/${entity}/${id}/active`, {
       isActive: modalAction === "enable"
-    }, { withCredentials: true })
+    })
       .then((res) => {
         setData(res.data);
         setFormData(res.data);
@@ -165,7 +165,7 @@ const Details = () => {
   const handleResetPassword = () => {
     if (isSaving.current) return;
     isSaving.current = true;
-    axios.put(`/api/${entity}/${id}/reset-pin`, {}, { withCredentials: true })
+    axios.put(`/api/${entity}/${id}/reset-pin`, {})
       .then((res) => {
         fetchData();
         setMessageModal({

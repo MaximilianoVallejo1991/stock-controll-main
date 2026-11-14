@@ -1,11 +1,19 @@
 import axios from 'axios';
+import { getToken, getSudoToken, clearTokens } from './tokenStorage';
 
-// Habilitar envío de cookies HttpOnly globalmente
-axios.defaults.withCredentials = true;
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:3000');
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 axios.interceptors.request.use(
   (config) => {
+    const token = getToken();
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const sudoToken = getSudoToken();
+    if (sudoToken) {
+      config.headers['x-sudo-token'] = sudoToken;
+    }
 
     // Attempt to pull 'activeStore' and 'simulatedRole' from the persisted Zustand state "user-storage"
     const storageData = localStorage.getItem('user-storage');
@@ -14,7 +22,7 @@ axios.interceptors.request.use(
         const parsed = JSON.parse(storageData);
         const activeStore = parsed?.state?.activeStore;
         const simulatedRole = parsed?.state?.simulatedRole;
-        
+
         // Solo enviar header si hay una tienda activa (no null para "ALL")
         if (activeStore) {
           config.headers['x-store-id'] = activeStore;
@@ -45,6 +53,7 @@ axios.interceptors.response.use(
       
       if (!isAuthCheck && !isOnLoginPage) {
         // Sesión expirada durante uso normal → limpiar y redirigir al login
+        clearTokens();
         localStorage.removeItem('user-storage');
         window.location.href = '/';
       }

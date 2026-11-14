@@ -93,7 +93,7 @@ export const useEntitySave = (entity, id, onSuccess) => {
         try {
             const res = await axios.put(`/api/${entity}/${id}/active`, {
                 isActive: activeState
-            }, { withCredentials: true });
+            });
             if (onSuccess) onSuccess(res.data);
             return { success: true, data: res.data };
         } catch (err) {
