@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import axios from 'axios';
+import { getToken } from '../utils/tokenStorage';
 
 const useUserStore = create(
   persist(
@@ -17,6 +18,10 @@ const useUserStore = create(
       setSimulatedRole: (role) => set({ simulatedRole: role || null }),
       
       checkSession: async () => {
+        if (!getToken()) {
+          set({ user: null, activeStore: null, isInitializing: false });
+          return null;
+        }
         try {
           const res = await axios.get("/api/auth/check");
           set({ user: res.data, isInitializing: false });
