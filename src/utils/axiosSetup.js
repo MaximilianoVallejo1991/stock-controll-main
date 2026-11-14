@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Habilitar envío de cookies HttpOnly globalmente
 axios.defaults.withCredentials = true;
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:3000');
 
 axios.interceptors.request.use(
   (config) => {
