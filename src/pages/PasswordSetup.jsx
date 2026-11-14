@@ -6,6 +6,7 @@ import ThemedButton from "../components/ThemedButton";
 import ThemedInput from "../components/ThemedInput";
 import { useTheme } from "../context/ThemeContext";
 import useUserStore from "../store/userStore";
+import { setToken } from "../utils/tokenStorage";
 
 const PasswordSetup = () => {
   const { theme } = useTheme();
@@ -59,6 +60,7 @@ const PasswordSetup = () => {
       });
 
       sessionStorage.removeItem("pending-password-setup");
+      setToken(res.data.token);
       setUser(res.data.user);
       navigate("/mainpanel", { replace: true });
     } catch (err) {

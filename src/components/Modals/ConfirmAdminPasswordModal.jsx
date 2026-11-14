@@ -3,6 +3,7 @@ import axios from "axios";
 import Modal from "./Modal";
 import ThemedButton from "../ThemedButton";
 import ThemedInput from "../ThemedInput";
+import { setSudoToken } from "../../utils/tokenStorage";
 
 const ConfirmAdminPasswordModal = ({ isOpen, onClose, onConfirm, title = "Confirmar Acción", description = "Por seguridad, ingresa tu contraseña de Administrador para confirmar esta acción.", loading = false }) => {
   const [adminPassword, setAdminPassword] = useState("");
@@ -24,8 +25,9 @@ const ConfirmAdminPasswordModal = ({ isOpen, onClose, onConfirm, title = "Confir
     setError("");
 
     try {
-      await axios.post("/api/auth/sudo", { password: adminPassword }, { withCredentials: true });
-      onConfirm(); // Éxito: disparamos la acción original (que ahora chequeará la cookie sudo en el server)
+      const res = await axios.post("/api/auth/sudo", { password: adminPassword });
+      setSudoToken(res.data.sudoToken);
+      onConfirm(); // Éxito: disparamos la acción original (que ahora chequeará el header sudo en el server)
     } catch (err) {
       setError(err.response?.data?.message || "Contraseña incorrecta o error de validación.");
     } finally {

@@ -2,7 +2,7 @@ import axios from 'axios';
 
 /**
  * Triggers a file download from an API endpoint that returns a binary stream.
- * Uses axios so that cookies and custom headers (x-store-id) are sent automatically.
+ * Uses axios so that auth and custom headers (Authorization, x-store-id) are sent automatically.
  *
  * @param {string} url       - The API endpoint (e.g. '/api/products/export')
  * @param {object} params    - Optional query params (e.g. { startDate, endDate })
@@ -13,7 +13,6 @@ export async function downloadExcel(url, params = {}, filename = 'reporte.xlsx')
     const response = await axios.get(url, {
       params,
       responseType: 'blob',
-      withCredentials: true,
     });
 
     // Try to extract filename from Content-Disposition header

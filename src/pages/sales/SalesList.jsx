@@ -37,7 +37,6 @@ export const SalesList = () => {
     try {
       const res = await axios.get("/api/caja/history/all", {
         params: { startDate: start, endDate: end },
-        withCredentials: true,
       });
       setHistory(res.data);
     } catch (err) {

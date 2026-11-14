@@ -96,7 +96,6 @@ export const SellerPerformance = () => {
       const params = getDateRange(period);
       const res = await axios.get("/api/seller-performance", {
         params,
-        withCredentials: true,
       });
       setData(res.data);
     } catch (err) {

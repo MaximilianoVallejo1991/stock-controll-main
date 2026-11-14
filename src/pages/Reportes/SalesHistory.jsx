@@ -31,7 +31,6 @@ export const SalesHistory = () => {
       setFilterError(null);
       const response = await axios.get("/api/caja/history/all", {
         params: { startDate: start, endDate: end },
-        withCredentials: true
       });
       setHistory(response.data);
     } catch (error) {
