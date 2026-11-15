@@ -5,7 +5,7 @@
 ## Review Workload Forecast
 
 | Field | Value |
-|-------|-------|
+|--------|----------|
 | Estimated changed lines | ~55–90 (tokenStorage.js ~20 new; axiosSetup.js ~8; Login/PasswordSetup/Modal/auth.js ~2–3 each; vercel.json ~4; 8 files' dead `withCredentials` removal ~10) |
 | 400-line budget risk | Low |
 | Chained PRs recommended | No — already resolved as 1 of 2 independent, standalone PRs |
