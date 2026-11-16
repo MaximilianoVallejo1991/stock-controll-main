@@ -3,9 +3,10 @@ import axios from "axios";
 import { useTheme } from "../../context/ThemeContext";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import ConfirmModal from "../../components/Modals/ConfirmModal"; // IMPORT MODAL
-import CashRegisterClosedModal, { CASH_REGISTER_RECOVERY_CODES } from "../../components/Modals/CashRegisterClosedModal";
+import CashRegisterClosedModal from "../../components/Modals/CashRegisterClosedModal";
 import { formatCurrency } from "../../utils/currency";
 import { parseCurrency } from "../../utils/currency";
+import { useCashRegisterRecovery } from "../../hooks/useCashRegisterRecovery";
 
 const CashRegister = ({ onGoToPOS }) => {
     const { theme } = useTheme();
@@ -43,7 +44,7 @@ const CashRegister = ({ onGoToPOS }) => {
     // 409 with a recognized `code` on open/close/movement (register already open/closed, or
     // closed mid-confirm) → shown via CashRegisterClosedModal. We're already on the register
     // tab here, so the recovery action for all three codes is simply a refetch (task 6.4).
-    const [registerClosedError, setRegisterClosedError] = useState(null);
+    const { registerClosedError, setRegisterClosedError, handleRecoveryError } = useCashRegisterRecovery();
 
     const leftColRef = useRef(null);
     const rightColRef = useRef(null);
@@ -204,11 +205,13 @@ const CashRegister = ({ onGoToPOS }) => {
             setIsCajaExpanded(false); // Colapsar el panel al abrir exitosamente
             await fetchData();
         } catch (err) {
-            const code = err.response?.data?.code;
-            if (code && CASH_REGISTER_RECOVERY_CODES.includes(code)) {
+            if (handleRecoveryError(err)) {
                 setShowOpenConfirm(false);
                 setPassword("");
-                setRegisterClosedError({ code, message: err.response?.data?.message });
+                // Debe limpiarse acá y no solo al reintentar: si queda un error viejo
+                // (p.ej. de una validación anterior) y el usuario cierra el modal de
+                // recuperación, reaparecería el mensaje stale en la card de caja.
+                setError("");
             } else {
                 setError(err.response?.data?.message || err.message);
             }
@@ -265,12 +268,13 @@ const CashRegister = ({ onGoToPOS }) => {
             setShowCloseConfirm(false);
             await fetchData();
         } catch (err) {
-            const code = err.response?.data?.code;
-            if (code && CASH_REGISTER_RECOVERY_CODES.includes(code)) {
+            if (handleRecoveryError(err)) {
                 setShowCloseConfirm(false);
                 setPassword("");
                 setObservation("");
-                setRegisterClosedError({ code, message: err.response?.data?.message });
+                // Idem executeOpen: limpiar el error viejo para que no resurja al cerrar
+                // el modal de recuperación.
+                setError("");
             } else {
                 setError(err.response?.data?.message || err.message);
             }
@@ -281,6 +285,7 @@ const CashRegister = ({ onGoToPOS }) => {
 
     const handleMovementSubmit = (e) => {
         e.preventDefault();
+        if (isProcessing) return;
         setShowMovementConfirm(true); // TRIGGER MODAL INSTEAD OF WINDOW.CONFIRM
     };
 
@@ -302,9 +307,10 @@ const CashRegister = ({ onGoToPOS }) => {
             setError("");
             await fetchData();
         } catch (err) {
-            const code = err.response?.data?.code;
-            if (code && CASH_REGISTER_RECOVERY_CODES.includes(code)) {
-                setRegisterClosedError({ code, message: err.response?.data?.message });
+            if (handleRecoveryError(err)) {
+                // Idem executeOpen/executeClose: limpiar el error viejo para que no
+                // resurja al cerrar el modal de recuperación.
+                setError("");
             } else {
                 setError(err.response?.data?.message || err.message);
             }
@@ -559,8 +565,8 @@ const CashRegister = ({ onGoToPOS }) => {
                                 </div>
 
 
-                                <button type="submit" className="p-4 mt-1 font-bold rounded-lg text-white shadow-md transition-transform active:scale-95 flex justify-center uppercase tracking-wide w-full" style={{ backgroundColor: movType === 'EXPENSE' ? theme.danger : theme.success }}>
-                                    Registrar Movimiento $
+                                <button type="submit" disabled={isProcessing} className="p-4 mt-1 font-bold rounded-lg text-white shadow-md transition-transform active:scale-95 flex justify-center uppercase tracking-wide w-full disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100" style={{ backgroundColor: movType === 'EXPENSE' ? theme.danger : theme.success }}>
+                                    {isProcessing ? "Procesando..." : "Registrar Movimiento $"}
                                 </button>
                             </form>
                         </div>
