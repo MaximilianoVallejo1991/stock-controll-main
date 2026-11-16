@@ -107,7 +107,7 @@ export const RegisterHistory = () => {
 
     const handleSaleClick = async (orderId) => {
         try {
-            const res = await axios.get(`http://localhost:3000/api/sales/${orderId}`);
+            const res = await axios.get(`/api/sales/${orderId}`);
             setSelectedSale(res.data);
         } catch (err) {
             console.error("Error fetching sale details:", err);

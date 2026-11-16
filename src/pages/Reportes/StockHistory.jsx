@@ -100,7 +100,7 @@ export const StockHistory = () => {
 
     const handleRowClick = async (record) => {
         if (record.type === 'SALE') {
-            const saleIdStr = record.description.split("#")[1];
+            const saleIdStr = record.description.match(/#(\S+)/)?.[1];
             if (saleIdStr) {
                 try {
                     const res = await axios.get(`/api/sales/${saleIdStr}`);
