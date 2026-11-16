@@ -24,6 +24,7 @@ export const StockHistory = () => {
 
     const [selectedSaleDetail, setSelectedSaleDetail] = useState(null);
     const [selectedAdjustDetail, setSelectedAdjustDetail] = useState(null);
+    const [loadingRecordId, setLoadingRecordId] = useState(null);
 
     // Default: last 7 days
     const [startDate, setStartDate] = useState(() => toLocalDateString(subDays(new Date(), 7)));
@@ -99,9 +100,11 @@ export const StockHistory = () => {
     };
 
     const handleRowClick = async (record) => {
+        if (loadingRecordId) return; // Ya hay una consulta en curso, ignorar clicks repetidos
         if (record.type === 'SALE') {
             const saleIdStr = record.description.match(/#(\S+)/)?.[1];
             if (saleIdStr) {
+                setLoadingRecordId(record.id);
                 try {
                     const res = await axios.get(`/api/sales/${saleIdStr}`);
                     setSelectedSaleDetail(res.data);
@@ -111,6 +114,8 @@ export const StockHistory = () => {
                         description: `No se pudo encontrar el detalle completo de la Venta #${saleIdStr}. Puede que haya sido eliminada o que no tengas permisos.`,
                         record: record
                     });
+                } finally {
+                    setLoadingRecordId(null);
                 }
             } else {
                 setSelectedAdjustDetail({
@@ -192,16 +197,17 @@ export const StockHistory = () => {
                             const isPositive = record.movementAmount > 0;
                             const isNegative = record.movementAmount < 0;
                             const amountColor = isPositive ? 'text-green-600' : isNegative ? 'text-red-500' : 'text-gray-500';
+                            const isLoadingThis = loadingRecordId === record.id;
 
                             return (
                                 <div
                                     key={record.id}
                                     onClick={() => handleRowClick(record)}
-                                    className="rounded-xl shadow-sm border overflow-hidden flex flex-col transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer relative"
+                                    className={`rounded-xl shadow-sm border overflow-hidden flex flex-col transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer relative ${isLoadingThis ? 'opacity-60 cursor-wait' : ''}`}
                                     style={{ backgroundColor: theme.bgcards, borderColor: theme.bg3 }}
                                 >
                                     <div className="absolute top-3 right-3 opacity-30 group-hover:opacity-100">
-                                        <FaInfoCircle />
+                                        {isLoadingThis ? <span className="text-xs italic opacity-70">Cargando...</span> : <FaInfoCircle />}
                                     </div>
                                     <div className="p-4 md:p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
 

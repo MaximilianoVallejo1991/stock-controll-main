@@ -33,6 +33,7 @@ export const RegisterHistory = () => {
     const [detailFilter, setDetailFilter] = useState("TODOS"); // Filtro para la lista detallada
     const [selectedSale, setSelectedSale] = useState(null);
     const [isExporting, setIsExporting] = useState(false);
+    const [loadingSaleId, setLoadingSaleId] = useState(null);
 
     // Default: last 7 days
     const [startDate, setStartDate] = useState(() => toLocalDateString(subDays(new Date(), 7)));
@@ -106,12 +107,16 @@ export const RegisterHistory = () => {
     };
 
     const handleSaleClick = async (orderId) => {
+        if (loadingSaleId) return; // Ya hay una consulta en curso, ignorar clicks repetidos
+        setLoadingSaleId(orderId);
         try {
             const res = await axios.get(`/api/sales/${orderId}`);
             setSelectedSale(res.data);
         } catch (err) {
             console.error("Error fetching sale details:", err);
             alert("No se pudo cargar el detalle de la venta.");
+        } finally {
+            setLoadingSaleId(null);
         }
     };
 
@@ -379,10 +384,12 @@ export const RegisterHistory = () => {
                                                         colorClass = isIncome ? 'text-green-600' : 'text-red-500';
                                                     }
 
+                                                    const isLoadingThis = item.isOrder && loadingSaleId === item.id;
+
                                                     return (
                                                         <div
                                                             key={idx}
-                                                            className={`flex justify-between items-center p-3 rounded-lg border text-sm transition-colors ${item.isOrder ? 'hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer hover:border-current' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                                            className={`flex justify-between items-center p-3 rounded-lg border text-sm transition-colors ${item.isOrder ? 'hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer hover:border-current' : 'hover:bg-black/5 dark:hover:bg-white/5'} ${isLoadingThis ? 'opacity-60 cursor-wait' : ''}`}
                                                             style={{ borderColor: theme.bg3 }}
                                                             onClick={() => { if (item.isOrder) handleSaleClick(item.id); }}
                                                         >
@@ -392,6 +399,7 @@ export const RegisterHistory = () => {
                                                                         {label}
                                                                     </span>
                                                                     <span className="opacity-60 text-xs">{format(item.date, "HH:mm:ss")}</span>
+                                                                    {isLoadingThis && <span className="opacity-70 text-xs italic">Cargando...</span>}
                                                                 </div>
                                                                 <div className="opacity-80">
                                                                     {item.isOrder ? (
