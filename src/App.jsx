@@ -3,6 +3,7 @@ import { RouterProvider } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
 import { routes } from "./routes";
 import useUserStore from "./store/userStore";
+import SleepOverlay from "./components/SleepOverlay";
 
 function App() {
   const isInitializing = useUserStore(state => state.isInitializing);
@@ -29,6 +30,7 @@ function App() {
   return (
     <ThemeProvider>
        <RouterProvider router={routes} />
+       <SleepOverlay />
     </ThemeProvider>
   );
 }

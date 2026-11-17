@@ -120,6 +120,22 @@ const EntityDetailsForm = ({
             );
         }
 
+        // Campo de plan gratuito en tiendas (solo SISTEMA ve este campo)
+        if (key === "isFreeTier" && entity === "stores") {
+            return (
+                <select
+                    name="isFreeTier"
+                    value={String(formData.isFreeTier)}
+                    onChange={(e) => handleChange({ target: { name: "isFreeTier", value: e.target.value } })}
+                    className="w-full p-2.5 rounded-lg border outline-none"
+                    style={{ backgroundColor: theme.bg, borderColor: theme.bg4, color: theme.text }}
+                >
+                    <option value="true" style={{ backgroundColor: theme.bg, color: theme.text }}>Sí</option>
+                    <option value="false" style={{ backgroundColor: theme.bg, color: theme.text }}>No</option>
+                </select>
+            );
+        }
+
         // Campo de stock en productos
         if (key === "stock" && entity === "products") {
             return (

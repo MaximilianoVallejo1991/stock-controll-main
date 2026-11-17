@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getToken, getSudoToken, clearTokens } from './tokenStorage';
+import { markRequest } from './wakeTracker';
 
 axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -44,7 +45,10 @@ axios.interceptors.request.use(
 );
 
 axios.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    markRequest();
+    return response;
+  },
   (error) => {
     if (error.response && error.response.status === 401) {
       // Ignorar 401 de /auth/check (es esperable cuando no hay sesión)
