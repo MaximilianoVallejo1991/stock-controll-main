@@ -6,8 +6,10 @@ import { useTheme } from "../context/ThemeContext";
 import ThemedButton from "../components/ThemedButton";
 import ThemedInput from "../components/ThemedInput";
 import useUserStore from '../store/userStore';
+import useWakeStore from '../store/wakeStore';
 import { isAuthenticated } from "../utils/auth";
 import { setToken } from "../utils/tokenStorage";
+import { withWakeFloor } from "../utils/wakeTracker";
 
 
 
@@ -15,6 +17,8 @@ const LoginPage = () => {
   const { theme } = useTheme();
 
   const setUser = useUserStore((state) => state.setUser);
+  const beginWake = useWakeStore((state) => state.beginWake);
+  const endWake = useWakeStore((state) => state.endWake);
 
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -25,6 +29,7 @@ const LoginPage = () => {
     email: "",
     password: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
 
   useEffect(() => {
@@ -65,6 +70,8 @@ const LoginPage = () => {
       return;
     }
 
+    const startedAt = Date.now();
+    setIsSubmitting(true);
     try {
       const res = await axios.post("/api/auth/login", {
         email,
@@ -88,6 +95,20 @@ const LoginPage = () => {
       setToken(res.data.token);
       setUser(res.data.user);
 
+      const u = res.data.user;
+      const exempt = u.role === 'SISTEMA' || u.rbacRole === 'SISTEMA' || !u.isFreeTier;
+      if (exempt) {
+        navigate("/mainpanel");
+        return;
+      }
+
+      setIsSubmitting(false); // cede el control al overlay global
+      beginWake(startedAt);   // piso de 30s desde el SUBMIT, no desde la respuesta
+      try {
+        await withWakeFloor(Promise.resolve(), startedAt);
+      } finally {
+        endWake();
+      }
       navigate("/mainpanel");
     } catch (err) {
       if (err.response?.data?.message) {
@@ -95,6 +116,8 @@ const LoginPage = () => {
       } else {
         setError("Credenciales incorrectas");
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -116,32 +139,34 @@ const LoginPage = () => {
         </div>
         <form onSubmit={handleLogin} className="flex flex-col gap-4">
 
-          {fieldErrors.email && (
-            <p className="text-red-500 text-sm -mt-2">{fieldErrors.email}</p>
-          )}
-          <ThemedInput
-            type="email"
-            placeholder="Correo"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            name="email"
-          />
+          <fieldset disabled={isSubmitting} className="contents">
+            {fieldErrors.email && (
+              <p className="text-red-500 text-sm -mt-2">{fieldErrors.email}</p>
+            )}
+            <ThemedInput
+              type="email"
+              placeholder="Correo"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              name="email"
+            />
 
-          {fieldErrors.password && (
-            <p className="text-red-500 text-sm -mt-2">{fieldErrors.password}</p>
-          )}
-          <ThemedInput
-            type="password"
-            placeholder="Contraseña o PIN temporal"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            name="password"
-          />
+            {fieldErrors.password && (
+              <p className="text-red-500 text-sm -mt-2">{fieldErrors.password}</p>
+            )}
+            <ThemedInput
+              type="password"
+              placeholder="Contraseña o PIN temporal"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              name="password"
+            />
 
-          {error && <p className="text-red-600 text-center mt-2">{error}</p>}
-          <ThemedButton type="submit">
-            Iniciar sesión
-          </ThemedButton>
+            {error && <p className="text-red-600 text-center mt-2">{error}</p>}
+            <ThemedButton type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Ingresando..." : "Iniciar sesión"}
+            </ThemedButton>
+          </fieldset>
 
         </form>
       </div>

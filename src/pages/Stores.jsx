@@ -20,6 +20,12 @@ export const Stores = () => {
   if (isSistema) {
     fields.push({ name: "maxDiscountPct", label: "Tope máximo de descuento (%)", type: "number", min: 1, max: 100 });
     columns.push({ header: "Tope Desc. (%)", accessorKey: "maxDiscountPct" });
+
+    fields.push({
+      name: "isFreeTier", label: "Plan gratuito (servidor en reposo)", type: "select",
+      options: [{ value: "true", label: "Sí" }, { value: "false", label: "No" }]
+    });
+    columns.push({ header: "Plan gratuito", accessorKey: "isFreeTier" });
   }
 
   return (
