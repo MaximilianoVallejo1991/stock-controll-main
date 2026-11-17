@@ -286,6 +286,11 @@ const CashRegister = ({ onGoToPOS }) => {
     const handleMovementSubmit = (e) => {
         e.preventDefault();
         if (isProcessing) return;
+        const num = parseCurrency(movAmount);
+        if (isNaN(num) || num <= 0) {
+            setError("El importe del movimiento debe ser mayor a cero.");
+            return;
+        }
         setShowMovementConfirm(true); // TRIGGER MODAL INSTEAD OF WINDOW.CONFIRM
     };
 
