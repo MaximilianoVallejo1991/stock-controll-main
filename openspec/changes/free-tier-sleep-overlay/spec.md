@@ -88,20 +88,22 @@ For a non-SISTEMA user on an `isFreeTier=true` store, the system MUST show the `
 
 ### Requirement: Wake Request Failure Handling
 
-If the `GET /api/health` call triggered by the "Despertar" button fails or does not resolve within 15 seconds, the system MUST stop waiting silently and surface an error state with a manual retry — no automatic background retries, no indefinite hang.
+If the `GET /api/health` call triggered by the "Despertar" button fails or does not resolve within **60 seconds** (revised 2026-11-18 — see note below), the system MUST stop waiting silently and surface an error state with a manual retry — no automatic background retries, no indefinite hang.
+
+**Revised 2026-11-18**: the original 15s value was shorter than Render free-tier's documented real cold-start ceiling (~50s), so the FIRST wake attempt on a genuinely sleeping backend always hit the client-side timeout before the backend finished booting — surfacing a misleading "connection failed" error for a backend that was actually fine, just still starting. The user noticed this live ("el primer intento siempre falla y el segundo entra") — classic signature of a client timeout shorter than the real operation. 60s gives margin above the known ~50s ceiling.
 
 #### Scenario: Health check times out
 
 - GIVEN the `despertando` overlay is visible after a "Despertar" click
-- WHEN `GET /api/health` has not resolved within 15 seconds
+- WHEN `GET /api/health` has not resolved within 60 seconds
 - THEN the system MUST abandon the wait and show an error message with a "Reintentar" button
 - AND MUST NOT retry automatically in the background
 
 #### Scenario: Health check fails outright
 
 - GIVEN the `despertando` overlay is visible
-- WHEN `GET /api/health` rejects (network error or non-2xx) before the 15s timeout
-- THEN the system MUST show the same error + "Reintentar" state immediately, without waiting out the 15s timeout or the 30s floor
+- WHEN `GET /api/health` rejects (network error or non-2xx) before the 60s timeout
+- THEN the system MUST show the same error + "Reintentar" state immediately, without waiting out the 60s timeout or the 30s floor
 
 #### Scenario: Retry re-enters despertando
 
