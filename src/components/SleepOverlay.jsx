@@ -23,7 +23,12 @@ import { useTheme } from '../context/ThemeContext';
 import ThemedButton from './ThemedButton';
 import { withWakeFloor } from '../utils/wakeTracker';
 
-const WAKE_TIMEOUT_MS = 15 * 1000;
+// Un cold start real de Render free-tier puede demorar hasta ~50s. Si este
+// timeout es más corto que eso, el primer intento SIEMPRE "falla" (en
+// realidad el back sigue booteando) y recién el reintento entra, porque ya
+// quedó despierto gracias al primer intento. Dejamos margen por encima del
+// peor caso documentado en vez de adivinar un número más bajo.
+const WAKE_TIMEOUT_MS = 60 * 1000;
 
 const COPY = {
   asleep: {

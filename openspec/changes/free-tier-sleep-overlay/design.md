@@ -54,10 +54,11 @@ Three thin seams, no new infrastructure:
 **Rationale**: `Promise.all` short-circuits on rejection — a failed health call would otherwise skip the 30s floor and flash the overlay.
 
 ### Decision: Wake failure surfaces a dedicated `error` phase with manual retry
-**Choice**: The "Despertar" wake handler races `GET /api/health` against a 15s timeout (`Promise.race`, not `withWakeFloor`). On timeout or outright rejection, transition `wakeStore.phase` to `'error'` and stop — no automatic background retry. A "Reintentar" button re-runs the exact same handler, which re-enters `despertando` and restarts the 30s floor from that new attempt.
+**Choice**: The "Despertar" wake handler races `GET /api/health` against a 60s timeout (`Promise.race`, not `withWakeFloor`). On timeout or outright rejection, transition `wakeStore.phase` to `'error'` and stop — no automatic background retry. A "Reintentar" button re-runs the exact same handler, which re-enters `despertando` and restarts the 30s floor from that new attempt.
 **Alternatives considered**: Silent auto-retry loop; let the request hang indefinitely under the 30s floor logic.
-**Rationale**: `withWakeFloor` is for the *happy path* floor — it must not be reused for failure, or a dead backend would hang the overlay forever with no user-visible signal. 15s < 30s so failure is always detected before the floor would have hidden it anyway. User chose the simplest option: no silent retries.
-**Note**: This path only applies to the button-triggered wake. The login-triggered wake (`Login.jsx`) only calls `withWakeFloor(Promise.resolve(), startedAt)` *after* the login POST already resolved successfully — there is nothing left that can fail at that point, so no separate error handling is needed there.
+**Rationale**: `withWakeFloor` is for the *happy path* floor — it must not be reused for failure, or a dead backend would hang the overlay forever with no user-visible signal. User chose the simplest option: no silent retries.
+**Revised 2026-11-18**: the timeout was originally 15s, chosen without cross-checking it against Render free-tier's documented real cold-start ceiling (~50s). A genuinely sleeping backend takes up to that long to actually finish booting, so the first "Despertar" click always hit the 15s client timeout before the real cold start completed — showing a misleading error for a backend that was fine, just still starting. The user caught this live ("el primer intento siempre falla, el segundo entra"), the textbook signature of a client timeout shorter than the real operation. Raised to 60s (margin above the ~50s ceiling) so a genuine cold start gets to finish before we give up on it. The 30s floor is unrelated and unaffected — it's a minimum for the success path, not a ceiling.
+**Note**: This path only applies to the button-triggered wake. The login-triggered wake (`Login.jsx`) only calls `withWakeFloor(Promise.resolve(), startedAt)` *after* the login POST already resolved successfully — there is nothing left that can fail at that point, so no separate error handling is needed there. (`Login.jsx`'s `axios.post` itself has no artificial client-side timeout, so it naturally waits out a real cold start without needing this fix.)
 
 ### Decision: Frontend verification is manual in v1
 **Choice**: Put all testable logic in `src/utils/wakeTracker.js` (pure, no React, no DOM) and verify overlay behaviour manually against the spec scenarios.
@@ -220,7 +221,7 @@ Props: **none** — self-contained. Renders `null` when `phase === 'idle'`.
 Wake handler (button only — timeout races ahead of the 30s floor so failure never waits it out):
 
 ```js
-const WAKE_TIMEOUT_MS = 15 * 1000;
+const WAKE_TIMEOUT_MS = 60 * 1000; // margen sobre el techo real de cold start (~50s)
 
 const wake = async () => {
   const startedAt = Date.now();

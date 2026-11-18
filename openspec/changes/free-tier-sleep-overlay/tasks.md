@@ -95,3 +95,13 @@ Both PRs merged to `main` and the migration applied to the live Supabase DB on 2
 **Future idea (not implemented)**: differentiate the `despertando` copy itself — keep the login-triggered one generic (current text), but have the button/idle-triggered one (which, unlike login, is structurally impossible for SISTEMA to ever reach) explicitly mention "plan gratuito" like the `asleep` copy already does.
 
 Lint re-run after this fix: `npx eslint src/pages/Login.jsx` clean.
+
+## Post-launch fix #2 (2026-11-18): wake timeout was shorter than the real cold-start ceiling
+
+User reported from live testing: "cuando se duerme el primer intento de despertar siempre falla y el segundo entra" — the first "Despertar" click always errors out, the retry always succeeds.
+
+**Root cause**: `SleepOverlay.jsx`'s `WAKE_TIMEOUT_MS` was 15s, but Render free-tier's real cold-start ceiling (established at the very start of this change's proposal) is up to ~50s. A genuinely sleeping backend takes that long to actually finish booting — so the client always gave up at 15s before the real cold start completed, showing a misleading "No pudimos despertar el servidor" for a backend that was fine, just still starting. The backend kept booting in the background regardless, so by the time the user clicked "Reintentar," it was already warm. Textbook signature of a client timeout shorter than the real operation.
+
+**Fix**: `WAKE_TIMEOUT_MS` raised from 15s to 60s (margin above the ~50s ceiling). The 30s floor is unrelated — it's a minimum for the success path, not a ceiling, so a slow-but-successful cold start now correctly takes as long as it actually takes (up to 60s) instead of being artificially cut short at 15s.
+
+`Login.jsx`'s own wait (`axios.post`, no artificial client timeout) was never affected by this bug.
