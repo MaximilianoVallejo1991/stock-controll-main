@@ -88,9 +88,7 @@ For a non-SISTEMA user on an `isFreeTier=true` store, the system MUST show the `
 
 ### Requirement: Wake Request Failure Handling
 
-If the `GET /api/health` call triggered by the "Despertar" button fails or does not resolve within **60 seconds** (revised 2026-11-18 — see note below), the system MUST stop waiting silently and surface an error state with a manual retry — no automatic background retries, no indefinite hang.
-
-**Revised 2026-11-18**: the original 15s value was shorter than Render free-tier's documented real cold-start ceiling (~50s), so the FIRST wake attempt on a genuinely sleeping backend always hit the client-side timeout before the backend finished booting — surfacing a misleading "connection failed" error for a backend that was actually fine, just still starting. The user noticed this live ("el primer intento siempre falla y el segundo entra") — classic signature of a client timeout shorter than the real operation. 60s gives margin above the known ~50s ceiling.
+If the `GET /api/health` call triggered by the "Despertar" button fails or does not resolve within **60 seconds** (revised 2026-11-18), the system MUST stop waiting silently and surface an error state with a manual retry — no automatic background retries, no indefinite hang.
 
 #### Scenario: Health check times out
 
@@ -102,7 +100,7 @@ If the `GET /api/health` call triggered by the "Despertar" button fails or does 
 #### Scenario: Health check fails outright
 
 - GIVEN the `despertando` overlay is visible
-- WHEN `GET /api/health` rejects (network error or non-2xx) before the 60s timeout
+- WHEN `GET /api/health` rejects before the 60s timeout
 - THEN the system MUST show the same error + "Reintentar" state immediately, without waiting out the 60s timeout or the 30s floor
 
 #### Scenario: Retry re-enters despertando
@@ -113,7 +111,7 @@ If the `GET /api/health` call triggered by the "Despertar" button fails or does 
 
 ### Requirement: Login Flow Reconciliation
 
-**Revised 2026-11-18** (post-launch fix — see rationale under "SISTEMA Full Exemption" below): `Login.jsx` MUST show the `despertando` overlay immediately on submit, before role/tier are known, so the real cold-start wait is covered end-to-end instead of hiding behind a generic "Ingresando..." text that resolves only after the wait is already over. After the response, the system MUST reconcile into the correct final state.
+**Revised 2026-11-18** (post-launch fix): `Login.jsx` MUST show the `despertando` overlay immediately on submit, before role/tier are known, so the real cold-start wait is covered end-to-end. After the response, the system MUST reconcile into the correct final state.
 
 #### Scenario: SISTEMA or non-free-tier store resolves immediately
 
@@ -125,12 +123,11 @@ If the `GET /api/health` call triggered by the "Despertar" button fails or does 
 
 - GIVEN the login response indicates a non-SISTEMA user on an `isFreeTier=true` store
 - WHEN the response arrives before the 30s floor (measured from submit) has elapsed
-- THEN the system MUST switch from the neutral loading state into the branded `despertando` overlay
-- AND MUST hold navigation until the 30s floor (from submit) is reached, then auto-dismiss and navigate
+- THEN the system MUST hold navigation until the 30s floor (from submit) is reached, then auto-dismiss and navigate
 
 ### Requirement: SISTEMA Full Exemption
 
-SISTEMA MUST NOT see the `asleep` overlay, ever, on any store — this is structurally guaranteed since SISTEMA is excluded from idle detection entirely (`useBackendIdle`). **Revised 2026-11-18**: the original rule also excluded SISTEMA from the `despertando` overlay during their own login, via a neutral loading state shown before role was known. Real-world testing showed this hid the actual ~50s Render cold-start wait behind generic text, with the branded overlay only flashing *after* the wait was already over — the opposite of the feature's purpose. SISTEMA MAY now briefly see the (role/tier-agnostic) `despertando` copy during their own slow login — it carries no free-tier branding — dismissed immediately with no 30s floor once the response confirms their role.
+SISTEMA MUST NOT see the `asleep` overlay, ever, on any store. **Revised 2026-11-18**: SISTEMA MAY now briefly see the (role/tier-agnostic) `despertando` copy during their own slow login — dismissed immediately with no 30s floor once the response confirms their role.
 
 #### Scenario: SISTEMA login on a free-tier store
 
