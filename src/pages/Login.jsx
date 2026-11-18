@@ -29,7 +29,6 @@ const LoginPage = () => {
     email: "",
     password: "",
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
 
   useEffect(() => {
@@ -71,7 +70,11 @@ const LoginPage = () => {
     }
 
     const startedAt = Date.now();
-    setIsSubmitting(true);
+    // Overlay YA, antes de saber rol/tier: cubre la espera real del cold
+    // start en vez de dejarla pasar detrás de un "Ingresando..." genérico.
+    // SISTEMA puede llegar a verlo brevemente en un login propio lento;
+    // se descarta sin piso apenas se confirma el rol, más abajo.
+    beginWake(startedAt);
     try {
       const res = await axios.post("/api/auth/login", {
         email,
@@ -79,6 +82,7 @@ const LoginPage = () => {
       });
 
       if (res.data.requiresPasswordChange) {
+        endWake();
         setToken(res.data.setupToken);
         sessionStorage.setItem("pending-password-setup", JSON.stringify({
           email: res.data.user?.email || email
@@ -98,26 +102,22 @@ const LoginPage = () => {
       const u = res.data.user;
       const exempt = u.role === 'SISTEMA' || u.rbacRole === 'SISTEMA' || !u.isFreeTier;
       if (exempt) {
+        endWake();
         navigate("/mainpanel");
         return;
       }
 
-      setIsSubmitting(false); // cede el control al overlay global
-      beginWake(startedAt);   // piso de 30s desde el SUBMIT, no desde la respuesta
-      try {
-        await withWakeFloor(Promise.resolve(), startedAt);
-      } finally {
-        endWake();
-      }
+      // Free-tier no-SISTEMA: completa el piso de 30s desde el SUBMIT, no desde la respuesta.
+      await withWakeFloor(Promise.resolve(), startedAt);
+      endWake();
       navigate("/mainpanel");
     } catch (err) {
+      endWake();
       if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else {
         setError("Credenciales incorrectas");
       }
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -139,34 +139,32 @@ const LoginPage = () => {
         </div>
         <form onSubmit={handleLogin} className="flex flex-col gap-4">
 
-          <fieldset disabled={isSubmitting} className="contents">
-            {fieldErrors.email && (
-              <p className="text-red-500 text-sm -mt-2">{fieldErrors.email}</p>
-            )}
-            <ThemedInput
-              type="email"
-              placeholder="Correo"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              name="email"
-            />
+          {fieldErrors.email && (
+            <p className="text-red-500 text-sm -mt-2">{fieldErrors.email}</p>
+          )}
+          <ThemedInput
+            type="email"
+            placeholder="Correo"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            name="email"
+          />
 
-            {fieldErrors.password && (
-              <p className="text-red-500 text-sm -mt-2">{fieldErrors.password}</p>
-            )}
-            <ThemedInput
-              type="password"
-              placeholder="Contraseña o PIN temporal"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              name="password"
-            />
+          {fieldErrors.password && (
+            <p className="text-red-500 text-sm -mt-2">{fieldErrors.password}</p>
+          )}
+          <ThemedInput
+            type="password"
+            placeholder="Contraseña o PIN temporal"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            name="password"
+          />
 
-            {error && <p className="text-red-600 text-center mt-2">{error}</p>}
-            <ThemedButton type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Ingresando..." : "Iniciar sesión"}
-            </ThemedButton>
-          </fieldset>
+          {error && <p className="text-red-600 text-center mt-2">{error}</p>}
+          <ThemedButton type="submit">
+            Iniciar sesión
+          </ThemedButton>
 
         </form>
       </div>

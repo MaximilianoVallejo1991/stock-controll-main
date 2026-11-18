@@ -83,3 +83,15 @@ Chain strategy: pending
     2. (Frontend) `useBackendIdle.js`'s `evaluateIdle()` called `setAsleep()` on every `visibilitychange`/`focus` with no check that a wake was already in flight — a user alt-tabbing during the ~50s Render cold start could reset `phase` back to `'asleep'` mid-`despertando`, and two concurrent `wake()` calls could then race to overwrite `wakeStore.phase`. Fixed: `evaluateIdle` now reads `useWakeStore.getState().phase` and only promotes to `'asleep'` from `'idle'`. Also fixed a minor leaked `setTimeout` in `SleepOverlay.jsx`'s `wake()` (not cleared when the health check won the race).
     (A third finding — `checkAuth`'s `role` fallback `null` → `'VENDEDOR'` — was re-flagged but is the already-known, already-accepted consequence of unifying auth payloads, documented since `sdd-apply`; not changed.)
     Backend test suite re-run: 30/30 green. Frontend lint re-run: unchanged at 88 pre-existing problems.
+
+## Post-launch fix (2026-11-18): login no longer stalls silently during real cold starts
+
+Both PRs merged to `main` and the migration applied to the live Supabase DB on 2026-11-17. User then tested the deployed app personally and found the real-world consequence of the original "neutral loading, then reconcile" login design: the generic "Ingresando..." text was shown for the ENTIRE real ~50s Render cold-start wait (since that happens during `await axios.post(...)`), and the branded `despertando` overlay only appeared briefly *after* the response already came back — the opposite of useful.
+
+**Decision**: `beginWake(startedAt)` now fires immediately on submit, before the login POST, so the overlay covers the real wait end-to-end. This relaxes the original "SISTEMA never sees the overlay, including during their own login" rule: SISTEMA can now briefly see the generic `despertando` copy (not free-tier-branded — that copy was already role/tier-agnostic) during their OWN slow login, dismissed immediately (no 30s floor) once the response confirms their role. SISTEMA's idle-based exemption while using the app, and the exemption from ever seeing the `asleep` state, are unaffected — this only touches the login path.
+
+`Login.jsx`'s `isSubmitting` local state and the "Ingresando..." button text were removed as dead code — the global overlay already blocks all interaction once mounted.
+
+**Future idea (not implemented)**: differentiate the `despertando` copy itself — keep the login-triggered one generic (current text), but have the button/idle-triggered one (which, unlike login, is structurally impossible for SISTEMA to ever reach) explicitly mention "plan gratuito" like the `asleep` copy already does.
+
+Lint re-run after this fix: `npx eslint src/pages/Login.jsx` clean.

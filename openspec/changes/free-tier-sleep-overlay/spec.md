@@ -111,14 +111,13 @@ If the `GET /api/health` call triggered by the "Despertar" button fails or does 
 
 ### Requirement: Login Flow Reconciliation
 
-`Login.jsx` MUST show a neutral loading state (no free-tier branding) for the duration of the login POST, since role and tier are unknown until the response resolves. After the response, the system MUST reconcile into the correct final state.
+**Revised 2026-11-18** (post-launch fix — see rationale under "SISTEMA Full Exemption" below): `Login.jsx` MUST show the `despertando` overlay immediately on submit, before role/tier are known, so the real cold-start wait is covered end-to-end instead of hiding behind a generic "Ingresando..." text that resolves only after the wait is already over. After the response, the system MUST reconcile into the correct final state.
 
 #### Scenario: SISTEMA or non-free-tier store resolves immediately
 
 - GIVEN the login response indicates the user is SISTEMA, or the store has `isFreeTier=false`
 - WHEN the response arrives
-- THEN the system MUST dismiss the neutral loading state and navigate immediately
-- AND MUST NOT show the branded `despertando` overlay at any point
+- THEN the system MUST dismiss the `despertando` overlay and navigate immediately, with no 30s floor applied
 
 #### Scenario: Free-tier non-SISTEMA login extends into branded overlay
 
@@ -129,14 +128,14 @@ If the `GET /api/health` call triggered by the "Despertar" button fails or does 
 
 ### Requirement: SISTEMA Full Exemption
 
-SISTEMA MUST NOT see the `asleep` or `despertando` overlay in any state, on any store, including during SISTEMA's own login.
+SISTEMA MUST NOT see the `asleep` overlay, ever, on any store — this is structurally guaranteed since SISTEMA is excluded from idle detection entirely (`useBackendIdle`). **Revised 2026-11-18**: the original rule also excluded SISTEMA from the `despertando` overlay during their own login, via a neutral loading state shown before role was known. Real-world testing showed this hid the actual ~50s Render cold-start wait behind generic text, with the branded overlay only flashing *after* the wait was already over — the opposite of the feature's purpose. SISTEMA MAY now briefly see the (role/tier-agnostic) `despertando` copy during their own slow login — it carries no free-tier branding — dismissed immediately with no 30s floor once the response confirms their role.
 
 #### Scenario: SISTEMA login on a free-tier store
 
 - GIVEN a SISTEMA user logs into a store with `isFreeTier=true`
-- WHEN the login POST is sent and resolves
-- THEN the system MUST show, at most, the neutral (unbranded) loading state
-- AND MUST NOT show the branded `despertando` overlay or the 30s floor
+- WHEN the login POST is sent
+- THEN the system MAY show the `despertando` overlay for the real duration of the request
+- AND WHEN the response arrives, MUST dismiss it immediately with no 30s floor applied
 
 #### Scenario: SISTEMA idle on any store
 
