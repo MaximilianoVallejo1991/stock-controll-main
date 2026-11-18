@@ -260,29 +260,30 @@ Layout: `fixed inset-0 z-[9999]` flex-centered, `p-4`, card `w-full max-w-sm`, a
 
 ### `Login.jsx` reconciliation
 
+**Revisado 2026-11-18**: ya no hay estado neutral local (`isSubmitting` eliminado). `beginWake` se llama YA al submit, antes de conocer rol/tier — el overlay global cubre toda la espera real del POST, en vez de esconderla detrás de un "Ingresando..." que recién se resolvía *después* del cold start. SISTEMA puede llegar a ver brevemente el copy de `despertando` (que no menciona "plan gratuito") en un login propio lento; se descarta sin piso apenas la respuesta confirma el rol.
+
 ```js
 const startedAt = Date.now();
-setIsSubmitting(true);
+beginWake(startedAt);                                   // overlay YA, antes de saber rol/tier
 try {
   const res = await axios.post("/api/auth/login", { email, password });
-  if (res.data.requiresPasswordChange) { /* rama actual intacta, navega ya */ }
+  if (res.data.requiresPasswordChange) { endWake(); /* navega a setup-password */ }
 
   setToken(res.data.token);
   setUser(res.data.user);
 
   const u = res.data.user;
   const exempt = u.role === 'SISTEMA' || !u.isFreeTier;
-  if (exempt) { navigate("/mainpanel"); return; }      // nunca ve el overlay branded
+  if (exempt) { endWake(); navigate("/mainpanel"); return; }  // sin piso, overlay genérico ya visto si fue lento
 
-  setIsSubmitting(false);                              // cede el control al overlay global
-  beginWake(startedAt);                                // piso de 30s desde el SUBMIT
-  try { await withWakeFloor(Promise.resolve(), startedAt); } finally { endWake(); }
+  await withWakeFloor(Promise.resolve(), startedAt);     // piso de 30s desde el SUBMIT
+  endWake();
   navigate("/mainpanel");
-} catch (err) { /* manejo de error actual */ }
-finally { setIsSubmitting(false); }
+} catch (err) {
+  endWake();
+  /* manejo de error actual */
+}
 ```
-
-Neutral loading state = disabled `ThemedButton` with label `Ingresando...`, inputs disabled, no robot art and no free-tier wording (role/tier unknown until the response resolves).
 
 ### `Stores.jsx` addition
 
