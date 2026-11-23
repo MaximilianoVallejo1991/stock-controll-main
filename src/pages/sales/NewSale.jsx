@@ -538,15 +538,17 @@ const NewSale = () => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Buscar por nombre, marca o código..."
-                className="flex-1 p-2 rounded outline-none"
+                disabled={isLoading}
+                placeholder={isLoading ? "Cargando productos..." : "Buscar por nombre, marca o código..."}
+                className="flex-1 p-2 rounded outline-none disabled:opacity-50"
                 style={{ backgroundColor: theme.bg }}
               />
 
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="p-2 rounded"
+                disabled={isLoading}
+                className="p-2 rounded disabled:opacity-50"
                 style={{ backgroundColor: theme.bg }}
               >
                 {categories.map(c => (
@@ -568,6 +570,13 @@ const NewSale = () => {
                   </tr>
                 </thead>
                 <tbody>
+                  {isLoading && (
+                    <tr>
+                      <td colSpan={5} className="p-4 text-sm opacity-60 italic text-center">
+                        Cargando productos...
+                      </td>
+                    </tr>
+                  )}
                   {filteredProducts.map((p, index) => {
                     const agotado = p.stock <= 0;
                     return (
