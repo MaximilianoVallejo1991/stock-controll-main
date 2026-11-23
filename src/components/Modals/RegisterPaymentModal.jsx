@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import ThemedButton from "../ThemedButton";
 import { useTheme } from "../../context/ThemeContext";
 import { DollarSign, CreditCard, Wallet, MessageSquare } from "lucide-react";
+import { formatCurrency } from "../../utils/currency";
 
 const RegisterPaymentModal = ({ isOpen, onClose, onConfirm, currentBalance }) => {
     const { theme } = useTheme();
@@ -68,7 +69,7 @@ const RegisterPaymentModal = ({ isOpen, onClose, onConfirm, currentBalance }) =>
                     <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
                         <DollarSign className="text-green-500" /> Registrar Pago
                     </h2>
-                    <p className="opacity-70 text-sm">Saldo pendiente: <strong>${currentBalance.toLocaleString()}</strong></p>
+                    <p className="opacity-70 text-sm">Saldo pendiente: <strong>{formatCurrency(currentBalance)}</strong></p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
