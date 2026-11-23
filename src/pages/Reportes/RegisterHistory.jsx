@@ -17,6 +17,7 @@ import {
 import { SaleDetail } from "../sales/SaleDetail";
 import DateRangeFilter from "../../components/Filters/DateRangeFilter";
 import { downloadExcel } from "../../utils/exportHelper";
+import { formatCurrency } from "../../utils/currency";
 
 const MAX_DAYS = 30;
 
@@ -198,7 +199,7 @@ export const RegisterHistory = () => {
 
                                                 {isClosed && difference !== null && difference !== 0 && (
                                                     <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase border ${difference < 0 ? 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' : 'bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'}`}>
-                                                        {difference < 0 ? `Faltante: -$${Math.abs(difference).toFixed(2)}` : `Excedente: +$${difference.toFixed(2)}`}
+                                                        {difference < 0 ? `Faltante: ${formatCurrency(difference)}` : `Excedente: +${formatCurrency(difference)}`}
                                                     </span>
                                                 )}
                                             </div>
@@ -233,43 +234,43 @@ export const RegisterHistory = () => {
 
                                                 <div className="flex justify-between text-sm">
                                                     <span className="opacity-70">Apertura (Base):</span>
-                                                    <span className="font-mono">${reg.openingAmount.toFixed(2)}</span>
+                                                    <span className="font-mono">{formatCurrency(reg.openingAmount)}</span>
                                                 </div>
                                                 <div className="flex justify-between text-sm">
                                                     <span className="opacity-70">Ventas Registradas:</span>
-                                                    <span className="font-mono text-green-600">+${t.ventasEfectivo.toFixed(2)}</span>
+                                                    <span className="font-mono text-green-600">+{formatCurrency(t.ventasEfectivo)}</span>
                                                 </div>
                                                 <div className="flex justify-between text-sm">
                                                     <span className="opacity-70">Ingresos Manuales:</span>
-                                                    <span className="font-mono text-green-600">+${t.ingresosManuales.toFixed(2)}</span>
+                                                    <span className="font-mono text-green-600">+{formatCurrency(t.ingresosManuales)}</span>
                                                 </div>
                                                 <div className="flex justify-between text-sm">
                                                     <span className="opacity-70">Retiros/Gastos:</span>
-                                                    <span className="font-mono text-red-500">-${t.retirosManuales.toFixed(2)}</span>
+                                                    <span className="font-mono text-red-500">-{formatCurrency(t.retirosManuales)}</span>
                                                 </div>
                                                 {(t.vueltosEntregados ?? 0) > 0 && (
                                                     <div className="flex justify-between text-sm">
                                                         <span className="opacity-70">Vueltos Entregados:</span>
-                                                        <span className="font-mono" style={{ color: theme.info }}>${t.vueltosEntregados.toFixed(2)}</span>
+                                                        <span className="font-mono" style={{ color: theme.info }}>{formatCurrency(t.vueltosEntregados)}</span>
                                                     </div>
                                                 )}
 
                                                 <div className="mt-2 pt-2 border-t flex flex-col gap-1" style={{ borderColor: theme.bg3 }}>
                                                     <div className="flex justify-between font-bold">
                                                         <span>Esperado Sistema:</span>
-                                                        <span className="font-mono">${fisicoExpected.toFixed(2)}</span>
+                                                        <span className="font-mono">{formatCurrency(fisicoExpected)}</span>
                                                     </div>
                                                     {isClosed && (
                                                         <>
                                                             <div className="flex justify-between font-bold">
                                                                 <span>Arqueo Declarado:</span>
-                                                                <span className="font-mono">${reg.closingAmount.toFixed(2)}</span>
+                                                                <span className="font-mono">{formatCurrency(reg.closingAmount)}</span>
                                                             </div>
                                                             <div className={`flex flex-col gap-1 px-2 py-1 rounded mt-1 ${difference === 0 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
                                                                 <div className="flex justify-between font-bold text-sm">
                                                                     <span>Discrepancia:</span>
                                                                     <span className="font-mono">
-                                                                        {difference === 0 ? 'Cuadrada' : difference < 0 ? `Faltante: -$${Math.abs(difference).toFixed(2)}` : `Excedente: +$${difference.toFixed(2)}`}
+                                                                        {difference === 0 ? 'Cuadrada' : difference < 0 ? `Faltante: ${formatCurrency(difference)}` : `Excedente: +${formatCurrency(difference)}`}
                                                                     </span>
                                                                 </div>
                                                                 {reg.observation && (
@@ -294,7 +295,7 @@ export const RegisterHistory = () => {
                                                 </div>
                                                 <div className="flex-1 flex flex-col justify-center items-center">
                                                     <span className="text-sm opacity-70 mb-1">Total Ingresos:</span>
-                                                    <span className="text-2xl font-mono font-bold text-blue-500">${t.ventasTransferencia.toFixed(2)}</span>
+                                                    <span className="text-2xl font-mono font-bold text-blue-500">{formatCurrency(t.ventasTransferencia)}</span>
                                                 </div>
                                             </div>
 
@@ -309,7 +310,7 @@ export const RegisterHistory = () => {
                                                 </div>
                                                 <div className="flex-1 flex flex-col justify-center items-center">
                                                     <span className="text-sm opacity-70 mb-1">Total Ingresos:</span>
-                                                    <span className="text-2xl font-mono font-bold text-orange-500">${t.ventasTarjeta.toFixed(2)}</span>
+                                                    <span className="text-2xl font-mono font-bold text-orange-500">{formatCurrency(t.ventasTarjeta)}</span>
                                                 </div>
                                             </div>
 
@@ -324,7 +325,7 @@ export const RegisterHistory = () => {
                                                 </div>
                                                 <div className="flex-1 flex flex-col justify-center items-center">
                                                     <span className="text-sm opacity-70 mb-1">Total Deuda Gen.:</span>
-                                                    <span className="text-2xl font-mono font-bold text-orange-600">${t.ventasCuentaCorriente.toFixed(2)}</span>
+                                                    <span className="text-2xl font-mono font-bold text-orange-600">{formatCurrency(t.ventasCuentaCorriente)}</span>
                                                 </div>
                                             </div>
 
@@ -409,7 +410,7 @@ export const RegisterHistory = () => {
                                                                         <span>
                                                                             Venta #{item.id.slice(-6)} - Pago: {method}
                                                                             {item.amoutToPaid > 0 && (
-                                                                                <b className="ml-1 text-orange-600"> (Deuda: ${item.amoutToPaid.toFixed(2)})</b>
+                                                                                <b className="ml-1 text-orange-600"> (Deuda: {formatCurrency(item.amoutToPaid)})</b>
                                                                             )}
                                                                         </span>
                                                                     ) : `Motivo: ${item.description || "N/A"} (${method})`}
