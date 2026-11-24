@@ -38,7 +38,10 @@ const Sidebar = ({ menuItems = [], onLogout, isMobileOpen, onCloseMobile }) => {
 
     if (user?.role === ROLES.SISTEMA) {
       axios.get("/api/stores")
-        .then(res => setStores(res.data))
+        // El selector define en qué tienda se opera ahora mismo — no tiene
+        // sentido poder pararse en una tienda dada de baja. Para revisar una
+        // tienda inactiva puntualmente, usar /stores con el filtro "Inactivos".
+        .then(res => setStores(res.data.filter(s => s.isActive !== false)))
         .catch(err => console.error("Error cargando tiendas en sidebar", err));
     }
 
